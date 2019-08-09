@@ -25,7 +25,7 @@ namespace VeiltrochDatacenter {
             
             var data = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
 
-            using var file = File.Open("text.csv", FileMode.Create);
+//            using var file = File.Open("text.csv", FileMode.Create);
 //            using var writer = new BinaryWriter(file);
 //            writer.Write(data.ExportToBytes());
 

@@ -110,7 +110,7 @@ namespace VeiltrochDatacenter {
                 if(value.IsBoolean) export[key] = "bool";
                 if(value.IsSingle) export[key] = "float";
                 if(value.IsInt32) export[key] = "int";
-                if(value.IsString) export[key] = "string";
+                if(value.IsString) export[key] = "str";
             }
         }
     }

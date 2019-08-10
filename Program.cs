@@ -23,27 +23,38 @@ namespace VeiltrochDatacenter {
             var dc = manager._dataCenters.First();
             var dataCenter = new DataCenter(dc.File.Open(FileMode.Open), DataCenterMode.Persistent, DataCenterStringOptions.None);
             
-            var data = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
+            var itemData = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
+            var itemStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Item", "String");
 
+            var form = new MultipartFormDataContent
+            {
+//                {new StringContent(Convert.ToBase64String(GzipByte(Encoding.ASCII.GetBytes("test")))), "test"}, 
+                {GZippedCsvContent(itemData), "item_data"}, 
+                {GZippedCsvContent(itemStrings), "item_strings"}
+            };
+            
 //            using var file = File.Open("text.csv", FileMode.Create);
 //            using var writer = new BinaryWriter(file);
 //            writer.Write(data.ExportToBytes());
 
-            await UploadData("http://127.0.0.1:5000/data", data.ExportToBytes());
+            await UploadData("http://127.0.0.1:8000/upload/items/", form);
+//            await UploadData("http://127.0.0.1:8000/analyse/", form);
         }
 
-        public static async Task<HttpResponseMessage> UploadData(string uri, byte[] data) {
+        public static HttpContent GZippedCsvContent(CsvExport data)
+        {
+            return new StringContent(Convert.ToBase64String(GzipByte(data.ExportToBytes())));
+        }
+        
+        public static async Task<HttpResponseMessage> UploadData(string uri, HttpContent content) {
             using var handler = new HttpClientHandler {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
             
             using var client = new HttpClient(handler, false);
-
-            data = GzipByte(data);
-//            Console.WriteLine(BitConverter.ToString(data).Substring(0, 50));
+            client.Timeout = TimeSpan.FromDays(5);
             
-            var content = new ByteArrayContent(data);
-            content.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
+//            content.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
             content.Headers.ContentEncoding.Add("deflate");
             
             var response = await client.PostAsync(uri, content);

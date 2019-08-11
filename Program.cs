@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,6 +24,8 @@ namespace VeiltrochDatacenter {
 
             var dc = manager._dataCenters.First();
             var dataCenter = new DataCenter(dc.File.Open(FileMode.Open), DataCenterMode.Persistent, DataCenterStringOptions.None);
+            Console.WriteLine("Loaded DC");
+            
             
             var itemData = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
             var itemStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Item", "String");
@@ -30,9 +34,15 @@ namespace VeiltrochDatacenter {
             var passivityStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Passivity", "String");
 
             var equipmentData = ExtractElementsCsv(dataCenter.Root, "EquipmentData", "Equipment");
+            
+            var abnormals = ExtractElementsCsv(dataCenter.Root, "Abnormality", "Abnormal");
+            var abnormalEffecs = ExtractElementsCsv(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect");
+            var abnormalStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Abnormality", "String");
 
 
-//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(passivityData));
+            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormals));
+//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormalEffecs));
+//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormalStrings));
 
             
             var form = new MultipartFormDataContent
@@ -50,7 +60,7 @@ namespace VeiltrochDatacenter {
 //            writer.Write(passivityData.ExportToBytes());
 
 
-            await UploadData("http://127.0.0.1:8000/upload/items/", form);
+//            await UploadData("http://127.0.0.1:8000/upload/items/", form);
         }
 
         public static HttpContent GZippedCsvContent(CsvExport data)
@@ -86,55 +96,87 @@ namespace VeiltrochDatacenter {
         }
 
         public delegate void ProcessDatacenterElementToCsv(DataCenterElement element, CsvExport export);
+
+        public static List<IDictionary<string, object>> ExtractElements(DataCenterElement element, params string[] path)
+        {
+            return ExtractElements(element, true, path);
+        }
         
-        public static CsvExport ExtractElementsCsv(DataCenterElement element, params string[] path) {
-            Console.Write("Extracting {0} ...", string.Join(".", path));
+        public static List<IDictionary<string, object>> ExtractElements(DataCenterElement element, bool verbose = false, params string[] path)
+        {
+            if (verbose) Console.WriteLine("Extracting {0}", string.Join(".", path));
+
+            if (path.Length == 0)
+            {
+                var attributes = element.Attributes.ToDictionary(entry => entry.Key, entry => entry.Value.Value);
+                return new List<IDictionary<string, object>> {ProcessElement(attributes, element)};
+            }
+
+            var result = new List<IDictionary<string, object>>();
+            foreach (var child in element.Children(path.First()))
+                result.AddRange(ExtractElements(child, false, path.Skip(1).ToArray()));
+
+            return result;
+        }
+
+        private static IDictionary<string, object> ProcessElement(IDictionary<string, object> attributes, DataCenterElement element)
+        {
+            if (element.Parent.Attributes.TryGetValue("id", out var parentId))
+            {
+                attributes["parent_id"] = parentId.Value;
+                attributes["element_position"] = element.Siblings()
+                    .Where(sibling => sibling.Name == element.Name)
+                    .TakeWhile(sibling => !sibling.Equals(element))
+                    .Count();
+            }
+
+            return attributes;
+        }
+
+        public static CsvExport ExtractCsv(IEnumerable<IDictionary<string, object>> elements) {
             var export = new CsvExport();
             
             // adds a typing row
             export.AddRow();
-            ExtractElementsCsv(element, export, ElementTypingToCsv, path);
-            Console.Write(" typing collected ...");
-            // adds data rows
-            ExtractElementsCsv(element, export, ElementAttributesToCsv, path);
-            Console.WriteLine(" data collected!");
+            var enumerable = elements.ToList();
+            foreach (var element in enumerable) ExtractCvsElementTyping(element, export);
+            foreach (var element in enumerable) ExtractCvsElement(element, export);
+            
             return export;
         }
 
-        public static void ExtractElementsCsv(DataCenterElement element, CsvExport export, ProcessDatacenterElementToCsv callback, params string[] path) {
-            if (path.Length == 0) {
-                callback.Invoke(element, export);
-                return;
-            }
+        private static void ExtractCvsElementTyping(IDictionary<string, object> element, CsvExport export)
+        {
+            foreach (var attribute in element) {
+                var key = attribute.Key;
+                var value = attribute.Value;
 
-            foreach (var child in element.Children(path.First()))
-                ExtractElementsCsv(child, export, callback, path.Skip(1).ToArray());
+                export[key] = value switch
+                {
+                    bool _ => "bool",
+                    float _ => "float",
+                    int _ => "int",
+                    string _ => "str",
+                    _ => ""
+                };
+            }
         }
-        
-        private static void ElementAttributesToCsv(DataCenterElement element, CsvExport export) {
+
+        private static void ExtractCvsElement(IDictionary<string, object> element, CsvExport export) {
             export.AddRow();
             
-            foreach (var attribute in element.Attributes) {
+            foreach (var attribute in element) {
                 var key = attribute.Key;
                 var value = attribute.Value;
                 
-                if(value.IsBoolean) export[key] = value.AsBoolean;
-                if(value.IsSingle) export[key] = value.AsSingle;
-                if(value.IsInt32) export[key] = value.AsInt32;
-                if(value.IsString) export[key] = value.AsString;
+                export[key] = value;
             }
         }
         
-        private static void ElementTypingToCsv(DataCenterElement element, CsvExport export) {
-            foreach (var attribute in element.Attributes) {
-                var key = attribute.Key;
-                var value = attribute.Value;
-                
-                if(value.IsBoolean) export[key] = "bool";
-                if(value.IsSingle) export[key] = "float";
-                if(value.IsInt32) export[key] = "int";
-                if(value.IsString) export[key] = "str";
-            }
+        public static CsvExport ExtractElementsCsv(DataCenterElement element, params string[] path)
+        {
+            var elements = ExtractElements(element, path);
+            return ExtractCsv(elements);
         }
     }
 }

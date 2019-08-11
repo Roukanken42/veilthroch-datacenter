@@ -26,19 +26,31 @@ namespace VeiltrochDatacenter {
             var itemData = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
             var itemStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Item", "String");
 
+            var passivityData = ExtractElementsCsv(dataCenter.Root, "Passivity", "Passive");
+            var passivityStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Passivity", "String");
+
+            var equipmentData = ExtractElementsCsv(dataCenter.Root, "EquipmentData", "Equipment");
+
+
+//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(passivityData));
+
+            
             var form = new MultipartFormDataContent
             {
-//                {new StringContent(Convert.ToBase64String(GzipByte(Encoding.ASCII.GetBytes("test")))), "test"}, 
+                {GZippedCsvContent(equipmentData), "equipment_data"}, 
                 {GZippedCsvContent(itemData), "item_data"}, 
-                {GZippedCsvContent(itemStrings), "item_strings"}
+                {GZippedCsvContent(itemStrings), "item_strings"},
+                {GZippedCsvContent(passivityData), "passivity_data"},
+                {GZippedCsvContent(passivityStrings), "passivity_strings"},
             };
-            
-//            using var file = File.Open("text.csv", FileMode.Create);
+
+            Console.WriteLine("Gzipped !");
+//            using var file = File.Open("passivity.csv", FileMode.Create);
 //            using var writer = new BinaryWriter(file);
-//            writer.Write(data.ExportToBytes());
+//            writer.Write(passivityData.ExportToBytes());
+
 
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
-//            await UploadData("http://127.0.0.1:8000/analyse/", form);
         }
 
         public static HttpContent GZippedCsvContent(CsvExport data)

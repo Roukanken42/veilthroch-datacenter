@@ -27,45 +27,103 @@ namespace VeiltrochDatacenter {
             Console.WriteLine("Loaded DC");
             
             
-            var itemData = ExtractElementsCsv(dataCenter.Root, "ItemData", "Item");
-            var itemStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Item", "String");
+            var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item");
+            var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
+            var items = JoinElementsByKey("id", itemData, itemStrings);
 
-            var passivityData = ExtractElementsCsv(dataCenter.Root, "Passivity", "Passive");
-            var passivityStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Passivity", "String");
 
-            var equipmentData = ExtractElementsCsv(dataCenter.Root, "EquipmentData", "Equipment");
+            var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
+            var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
+            var passivities = JoinElementsByKey("id", passivityData, passivityStrings);
+
+            var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
             
-            var abnormals = ExtractElementsCsv(dataCenter.Root, "Abnormality", "Abnormal");
-            var abnormalEffecs = ExtractElementsCsv(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect");
-            var abnormalStrings = ExtractElementsCsv(dataCenter.Root, "StrSheet_Abnormality", "String");
+            var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
+            var abnormalStrings = ExtractElements(dataCenter.Root, "StrSheet_Abnormality", "String");
+            var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings);
+            
+            var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
 
-
-            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormals));
-//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormalEffecs));
-//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormalStrings));
+            var abnormalEffectAbnormalRelation =
+                GenerateManyToOneRelation(abnormalEffects, "parent_id", "abnormality_effect", "abnormality");
+            
+//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormals));
 
             
             var form = new MultipartFormDataContent
             {
-                {GZippedCsvContent(equipmentData), "equipment_data"}, 
-                {GZippedCsvContent(itemData), "item_data"}, 
-                {GZippedCsvContent(itemStrings), "item_strings"},
-                {GZippedCsvContent(passivityData), "passivity_data"},
-                {GZippedCsvContent(passivityStrings), "passivity_strings"},
+                {ElementsContent(items), "items"}, 
+                {ElementsContent(equipmentData), "equipment_data"}, 
+                {ElementsContent(passivities), "passivities"},
+                {ElementsContent(abnormals), "abnormals"},
+                {ElementsContent(abnormalEffects), "abnormal_effects"},
+                {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
             };
 
             Console.WriteLine("Gzipped !");
-//            using var file = File.Open("passivity.csv", FileMode.Create);
-//            using var writer = new BinaryWriter(file);
-//            writer.Write(passivityData.ExportToBytes());
 
 
-//            await UploadData("http://127.0.0.1:8000/upload/items/", form);
+            await UploadData("http://127.0.0.1:8000/upload/items/", form);
+        }
+
+        private static IEnumerable<IDictionary<string, object>> GenerateManyToOneRelation(
+            IEnumerable<IDictionary<string, object>> elements, string key, string thisSide, string otherSide)
+        {
+            var result = new List<Dictionary<string, object>>();
+
+            foreach (var element in elements)
+            {
+                var rel = new Dictionary<string, object>();
+                rel[thisSide] = element["id"];
+                rel[otherSide] = element[key];
+                rel["position"] = element["element_position"];
+                result.Add(rel);
+            }
+
+            return GenerateIds(result);
+        }
+
+        private static IEnumerable<IDictionary<string, object>> GenerateIds(
+            IEnumerable<IDictionary<string, object>> elements,
+            string name = "id")
+        {
+            return elements.Select((e, i) =>
+            {
+                e[name] = i;
+                return e;
+            });
+        }
+
+        private static List<Dictionary<string, object>> JoinElementsByKey(string key, params List<IDictionary<string,object>>[] elementLists)
+        {
+            var result = new Dictionary<object, Dictionary<string, object>>();
+
+            foreach (var elementList in elementLists) {
+                foreach (var element in elementList) {
+                    if (!element.TryGetValue(key, out var id))
+                        throw new KeyNotFoundException();
+                    
+                    var merged = result.GetValueOrDefault(id, new Dictionary<string, object>());
+
+                    foreach (var attribute in element) {
+                        merged[attribute.Key] = attribute.Value;
+                    }
+
+                    result[id] = merged;
+                }
+            }
+
+            return result.Values.ToList();
         }
 
         public static HttpContent GZippedCsvContent(CsvExport data)
         {
             return new StringContent(Convert.ToBase64String(GzipByte(data.ExportToBytes())));
+        }
+        
+        public static HttpContent ElementsContent(IEnumerable<IDictionary<string, object>> elements)
+        {
+            return GZippedCsvContent(ExtractCsv(elements));
         }
         
         public static async Task<HttpResponseMessage> UploadData(string uri, HttpContent content) {

@@ -40,14 +40,18 @@ namespace VeiltrochDatacenter {
             
             var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
             var abnormalStrings = ExtractElements(dataCenter.Root, "StrSheet_Abnormality", "String");
-            var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings);
+            var abnormalIcons = MapKeys(
+                ExtractElements(dataCenter.Root, "AbnormalityIconData", "Icon"), 
+                new Dictionary<string, string>{{ "abnormalityId", "id" }, { "iconName", "icon" }}
+            );
+            var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons);
             
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
 
             var abnormalEffectAbnormalRelation =
-                GenerateManyToOneRelation(abnormalEffects, "parent_id", "abnormality_effect", "abnormality");
+                GenerateManyToOneRelation(abnormalEffects, "parent_id", "abnormality_effect", "abnormality").ToList();
             
-//            await UploadData("http://127.0.0.1:8000/analyse/", GZippedCsvContent(abnormals));
+            await UploadData("http://127.0.0.1:8000/analyse/", ElementsContent(abnormals));
 
             
             var form = new MultipartFormDataContent
@@ -64,6 +68,16 @@ namespace VeiltrochDatacenter {
 
 
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
+        }
+
+        private static IEnumerable<IDictionary<string, object>> MapKeys(IEnumerable<IDictionary<string, object>> elements, IReadOnlyDictionary<string, string> renames)
+        {
+            return elements.Select(d => 
+                d.ToDictionary(
+                    entry => renames.TryGetValue(entry.Key, out var newKey) ? newKey : entry.Key, 
+                    entry => entry.Value
+                )
+            );
         }
 
         private static IEnumerable<IDictionary<string, object>> GenerateManyToOneRelation(
@@ -94,7 +108,7 @@ namespace VeiltrochDatacenter {
             });
         }
 
-        private static List<Dictionary<string, object>> JoinElementsByKey(string key, params List<IDictionary<string,object>>[] elementLists)
+        private static List<Dictionary<string, object>> JoinElementsByKey(string key, params IEnumerable<IDictionary<string,object>>[] elementLists)
         {
             var result = new Dictionary<object, Dictionary<string, object>>();
 

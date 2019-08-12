@@ -36,6 +36,8 @@ namespace VeiltrochDatacenter {
             var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
             var passivities = JoinElementsByKey("id", passivityData, passivityStrings);
 
+            var itemPassivityRelation = GenerateLinkRelation(items, "linkPassivityId", "item", "passivity").ToList();
+            
             var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
             
             var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
@@ -49,7 +51,7 @@ namespace VeiltrochDatacenter {
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
 
             var abnormalEffectAbnormalRelation =
-                GenerateManyToOneRelation(abnormalEffects, "parent_id", "abnormality_effect", "abnormality").ToList();
+                GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
             
             await UploadData("http://127.0.0.1:8000/analyse/", ElementsContent(abnormals));
 
@@ -57,8 +59,9 @@ namespace VeiltrochDatacenter {
             var form = new MultipartFormDataContent
             {
                 {ElementsContent(items), "items"}, 
-                {ElementsContent(equipmentData), "equipment_data"}, 
                 {ElementsContent(passivities), "passivities"},
+                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+                {ElementsContent(equipmentData), "equipment_data"}, 
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},
                 {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
@@ -68,6 +71,38 @@ namespace VeiltrochDatacenter {
 
 
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
+        }
+
+        private static IEnumerable<int> ProcessLink(object link)
+        {
+            return link switch {
+                int id => new List<int>{id},
+                string arrayString => 
+                    arrayString
+                        .Split(';')
+                        .Where(e => !string.IsNullOrEmpty(e))
+                        .Select(int.Parse),
+                _ => throw new ArgumentException("Link attribute is not processable")
+            };
+        } 
+        
+        private static IEnumerable<IDictionary<string, object>> GenerateLinkRelation(IEnumerable<Dictionary<string, object>> elements, string linkKey, string thisSide, string otherSide)
+        {
+            var result = elements
+                .Select(element =>
+                    ProcessLink(element.GetValueOrDefault(linkKey, ""))
+                        .Select((link, position) =>
+                            new Dictionary<string, object>
+                            {
+                                [thisSide] = element["id"],
+                                [otherSide] = link,
+                                ["position"] = position
+                            }
+                        )
+                )
+                .SelectMany(e => e);
+
+            return GenerateIds(result);
         }
 
         private static IEnumerable<IDictionary<string, object>> MapKeys(IEnumerable<IDictionary<string, object>> elements, IReadOnlyDictionary<string, string> renames)
@@ -80,19 +115,17 @@ namespace VeiltrochDatacenter {
             );
         }
 
-        private static IEnumerable<IDictionary<string, object>> GenerateManyToOneRelation(
-            IEnumerable<IDictionary<string, object>> elements, string key, string thisSide, string otherSide)
+        private static IEnumerable<IDictionary<string, object>> GenerateXmlChildRelation(
+            IEnumerable<IDictionary<string, object>> elements, string thisSide, string otherSide)
         {
-            var result = new List<Dictionary<string, object>>();
-
-            foreach (var element in elements)
-            {
-                var rel = new Dictionary<string, object>();
-                rel[thisSide] = element["id"];
-                rel[otherSide] = element[key];
-                rel["position"] = element["element_position"];
-                result.Add(rel);
-            }
+            var result = elements
+                .Select(element => 
+                    new Dictionary<string, object> {
+                        [thisSide] = element["id"], 
+                        [otherSide] = element["parent_id"], 
+                        ["position"] = element["element_position"]
+                    }
+                );
 
             return GenerateIds(result);
         }
@@ -229,7 +262,7 @@ namespace VeiltrochDatacenter {
                     float _ => "float",
                     int _ => "int",
                     string _ => "str",
-                    _ => ""
+                    _ => throw new ArgumentException("Wtf did you even get this from ??")
                 };
             }
         }

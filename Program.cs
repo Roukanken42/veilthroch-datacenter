@@ -17,7 +17,19 @@ using Jitbit.Utils;
 
 namespace VeiltrochDatacenter {
     internal class Program {
-        
+        private static IEnumerable<int> ProcessLink(object link)
+        {
+            return link switch {
+                int id => new List<int>{id},
+                string arrayString => 
+                    arrayString
+                        .Split(';')
+                        .Where(e => !string.IsNullOrEmpty(e))
+                        .Select(int.Parse),
+                _ => throw new ArgumentException("Link attribute is not processable")
+            };
+        }
+
         public static async Task Main(string[] args) {
             var manager = new AssetManager();
             manager.UpdateAll();
@@ -38,9 +50,13 @@ namespace VeiltrochDatacenter {
             var itemPassivityRelation = GenerateLinkRelation(items, "linkPassivityId", "item", "passivity").ToList();
 
             var passivityCategories = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "PassivityCategoryData", "Category");
-            var itemToPassivityCategory = GenerateLinkRelation(items, "linkPassivityCategoryId", "item", "passivity_category");
             var passivityCategoryToPassivity = GenerateLinkRelation(items, "passivityLink", "passivity_category", "passivity");
-                
+            var itemToPassivityCategoryUnfiltered = GenerateLinkRelation(items, "linkPassivityCategoryId", "item", "passivity_category");
+            
+            Console.WriteLine("Filtering BHs mess on passivity categories");
+            var passivityCategoryIds = passivityCategories.Select(e => e["id"]).ToHashSet();
+            var itemToPassivityCategory = itemToPassivityCategoryUnfiltered.Where(e => passivityCategoryIds.Contains(e["passivity_category"]));
+            
             var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
             
             var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
@@ -53,19 +69,19 @@ namespace VeiltrochDatacenter {
             
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
             var abnormalEffectAbnormalRelation = GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
-            
-            await UploadData("http://127.0.0.1:8000/analyse/", ElementsContent(abnormals));
 
+//            Console.WriteLine(itemToPassivityCategory.First(e => e["passivity_category"] is int x && x == 102)["item"]);
+            
             
             var form = new MultipartFormDataContent
             {
-                {ElementsContent(items), "items"}, 
-                {ElementsContent(passivities), "passivities"},
-                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+//                {ElementsContent(items), "items"}, 
+//                {ElementsContent(passivities), "passivities"},
+//                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
                 {ElementsContent(passivityCategories), "passivity_categories"},
                 {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
                 {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
-                {ElementsContent(equipmentData), "equipment_data"}, 
+//                {ElementsContent(equipmentData), "equipment_data"}, 
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},
                 {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
@@ -73,25 +89,13 @@ namespace VeiltrochDatacenter {
 
             Console.WriteLine("Gzipped !");
 
-
+//            await UploadData("http://127.0.0.1:8000/analyse/", form);
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
         }
 
-        private static IEnumerable<int> ProcessLink(object link)
-        {
-            return link switch {
-                int id => new List<int>{id},
-                string arrayString => 
-                    arrayString
-                        .Split(';')
-                        .Where(e => !string.IsNullOrEmpty(e))
-                        .Select(int.Parse),
-                _ => throw new ArgumentException("Link attribute is not processable")
-            };
-        } 
-        
         private static IEnumerable<IDictionary<string, object>> GenerateLinkRelation(IEnumerable<Dictionary<string, object>> elements, string linkKey, string thisSide, string otherSide)
         {
+            Console.WriteLine("Generating link relation {0} to {1}", thisSide, otherSide);
             var result = elements
                 .Select(element =>
                     ProcessLink(element.GetValueOrDefault(linkKey, ""))
@@ -122,6 +126,7 @@ namespace VeiltrochDatacenter {
         private static IEnumerable<IDictionary<string, object>> GenerateXmlChildRelation(
             IEnumerable<IDictionary<string, object>> elements, string thisSide, string otherSide)
         {
+            Console.WriteLine("Generating xml child relation {0} to {1}", thisSide, otherSide);
             var result = elements
                 .Select(element => 
                     new Dictionary<string, object> {
@@ -189,6 +194,7 @@ namespace VeiltrochDatacenter {
             content.Headers.ContentEncoding.Add("deflate");
             
             var response = await client.PostAsync(uri, content);
+            response.EnsureSuccessStatusCode();
             Console.WriteLine(response.Content.ToString());
 
             return response;

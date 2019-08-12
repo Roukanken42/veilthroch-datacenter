@@ -30,14 +30,17 @@ namespace VeiltrochDatacenter {
             var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item");
             var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
             var items = JoinElementsByKey("id", itemData, itemStrings);
-
-
+            
             var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
             var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
             var passivities = JoinElementsByKey("id", passivityData, passivityStrings);
 
             var itemPassivityRelation = GenerateLinkRelation(items, "linkPassivityId", "item", "passivity").ToList();
-            
+
+            var passivityCategories = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "PassivityCategoryData", "Category");
+            var itemToPassivityCategory = GenerateLinkRelation(items, "linkPassivityCategoryId", "item", "passivity_category");
+            var passivityCategoryToPassivity = GenerateLinkRelation(items, "passivityLink", "passivity_category", "passivity");
+                
             var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
             
             var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
@@ -49,9 +52,7 @@ namespace VeiltrochDatacenter {
             var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons);
             
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
-
-            var abnormalEffectAbnormalRelation =
-                GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
+            var abnormalEffectAbnormalRelation = GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
             
             await UploadData("http://127.0.0.1:8000/analyse/", ElementsContent(abnormals));
 
@@ -61,6 +62,9 @@ namespace VeiltrochDatacenter {
                 {ElementsContent(items), "items"}, 
                 {ElementsContent(passivities), "passivities"},
                 {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+                {ElementsContent(passivityCategories), "passivity_categories"},
+                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
+                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
                 {ElementsContent(equipmentData), "equipment_data"}, 
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},

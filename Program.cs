@@ -42,21 +42,24 @@ namespace VeiltrochDatacenter {
             var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
             var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
             Console.WriteLine("Extracting ItemData@maxEnchant");
-            var itemMaxEnchant = itemData.Select(item => item.TryGetValue("linkMaterialEnchantId", out var matId)
-                ? new Dictionary<string, object>()
-                {
-                    {"id", item["id"]},
-                    {"maxEnchant", dataCenter.Root
-                        .Children("MaterialEnchantData")
-                        .First()
-                        .Children("ItemEnchant")
-                        .Where(e => e["materialEnchantId"].Value == matId)
-                        .Select(e => e["maxEnchantCount"].Value)
-                        .First()
-                    },
-                } : new Dictionary<string, object>()
+            var itemMaxEnchant = itemData.Select(item => 
+                item.TryGetValue("linkMaterialEnchantId", out var matId) && matId is int id && id != 0 ? 
+                    new Dictionary<string, object>()
+                    {
+                        {"id", item["id"]},
+                        {"maxEnchant", 
+                            dataCenter.Root
+                            .Children("MaterialEnchantData")
+                            .First()
+                            .Children("ItemEnchant")
+                            .Where(e => e["materialEnchantId"].AsInt32 == id)
+                            .Select(e => e["maxEnchantCount"].Value)
+                            .First()
+                        },
+                    } 
+                    : new Dictionary<string, object>()
             );
-            
+
             var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant);
             
             var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
@@ -76,9 +79,8 @@ namespace VeiltrochDatacenter {
             var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
 
             var enchantData = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant");
-            var enchantEffects = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "Effect");
-            var enchantStats = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "BasicStat");
-            var itemToEnchantData = GenerateLinkRelation(items, "linkEnchantId", "item", "enchant_data");
+            var enchantEffects = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "Effect"));
+            var enchantStats = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "BasicStat"));
             
             
             
@@ -97,17 +99,16 @@ namespace VeiltrochDatacenter {
 
             var form = new MultipartFormDataContent
             {
-//                {ElementsContent(items), "items"}, 
-//                {ElementsContent(passivities), "passivities"},
-//                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
-//                {ElementsContent(passivityCategories), "passivity_categories"},
-//                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
-//                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
-//                {ElementsContent(equipmentData), "equipment_data"}, 
+                {ElementsContent(items), "items"}, 
+                {ElementsContent(passivities), "passivities"},
+                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+                {ElementsContent(passivityCategories), "passivity_categories"},
+                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
+                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
+                {ElementsContent(equipmentData), "equipment_data"}, 
                 {ElementsContent(enchantData), "enchant_data"},
                 {ElementsContent(enchantEffects), "enchant_effects"},
                 {ElementsContent(enchantStats), "enchant_stats"},
-                {ElementsContent(itemToEnchantData), "item_to_enchant_data"},
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},
                 {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
@@ -181,9 +182,10 @@ namespace VeiltrochDatacenter {
             var result = new Dictionary<object, Dictionary<string, object>>();
 
             foreach (var elementList in elementLists) {
-                foreach (var element in elementList) {
+                foreach (var element in elementList)
+                {
                     if (!element.TryGetValue(key, out var id))
-                        throw new KeyNotFoundException();
+                        continue;
                     
                     var merged = result.GetValueOrDefault(id, new Dictionary<string, object>());
 

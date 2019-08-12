@@ -17,13 +17,13 @@ using Jitbit.Utils;
 
 namespace VeiltrochDatacenter {
     internal class Program {
-        private static IEnumerable<int> ProcessLink(object link)
+        private static IEnumerable<int> ProcessLink(object link, char separator = ',')
         {
             return link switch {
                 int id => new List<int>{id},
                 string arrayString => 
                     arrayString
-                        .Split(';')
+                        .Split(';', ',')
                         .Where(e => !string.IsNullOrEmpty(e))
                         .Select(int.Parse),
                 _ => throw new ArgumentException("Link attribute is not processable")
@@ -39,9 +39,25 @@ namespace VeiltrochDatacenter {
             Console.WriteLine("Loaded DC");
             
             
-            var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item");
+            var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
             var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
-            var items = JoinElementsByKey("id", itemData, itemStrings);
+            Console.WriteLine("Extracting ItemData@maxEnchant");
+            var itemMaxEnchant = itemData.Select(item => item.TryGetValue("linkMaterialEnchantId", out var matId)
+                ? new Dictionary<string, object>()
+                {
+                    {"id", item["id"]},
+                    {"maxEnchant", dataCenter.Root
+                        .Children("MaterialEnchantData")
+                        .First()
+                        .Children("ItemEnchant")
+                        .Where(e => e["materialEnchantId"].Value == matId)
+                        .Select(e => e["maxEnchantCount"].Value)
+                        .First()
+                    },
+                } : new Dictionary<string, object>()
+            );
+            
+            var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant);
             
             var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
             var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
@@ -50,7 +66,7 @@ namespace VeiltrochDatacenter {
             var itemPassivityRelation = GenerateLinkRelation(items, "linkPassivityId", "item", "passivity").ToList();
 
             var passivityCategories = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "PassivityCategoryData", "Category");
-            var passivityCategoryToPassivity = GenerateLinkRelation(items, "passivityLink", "passivity_category", "passivity");
+            var passivityCategoryToPassivity = GenerateLinkRelation(passivityCategories, "passivityLink", "passivity_category", "passivity");
             var itemToPassivityCategoryUnfiltered = GenerateLinkRelation(items, "linkPassivityCategoryId", "item", "passivity_category");
             
             Console.WriteLine("Filtering BHs mess on passivity categories");
@@ -58,6 +74,13 @@ namespace VeiltrochDatacenter {
             var itemToPassivityCategory = itemToPassivityCategoryUnfiltered.Where(e => passivityCategoryIds.Contains(e["passivity_category"]));
             
             var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
+
+            var enchantData = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant");
+            var enchantEffects = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "Effect");
+            var enchantStats = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "BasicStat");
+            var itemToEnchantData = GenerateLinkRelation(items, "linkEnchantId", "item", "enchant_data");
+            
+            
             
             var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
             var abnormalStrings = ExtractElements(dataCenter.Root, "StrSheet_Abnormality", "String");
@@ -70,18 +93,21 @@ namespace VeiltrochDatacenter {
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
             var abnormalEffectAbnormalRelation = GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
 
-//            Console.WriteLine(itemToPassivityCategory.First(e => e["passivity_category"] is int x && x == 102)["item"]);
             
-            
+
             var form = new MultipartFormDataContent
             {
 //                {ElementsContent(items), "items"}, 
 //                {ElementsContent(passivities), "passivities"},
 //                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
-                {ElementsContent(passivityCategories), "passivity_categories"},
-                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
-                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
+//                {ElementsContent(passivityCategories), "passivity_categories"},
+//                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
+//                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
 //                {ElementsContent(equipmentData), "equipment_data"}, 
+                {ElementsContent(enchantData), "enchant_data"},
+                {ElementsContent(enchantEffects), "enchant_effects"},
+                {ElementsContent(enchantStats), "enchant_stats"},
+                {ElementsContent(itemToEnchantData), "item_to_enchant_data"},
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},
                 {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
@@ -93,12 +119,12 @@ namespace VeiltrochDatacenter {
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
         }
 
-        private static IEnumerable<IDictionary<string, object>> GenerateLinkRelation(IEnumerable<Dictionary<string, object>> elements, string linkKey, string thisSide, string otherSide)
+        private static IEnumerable<IDictionary<string, object>> GenerateLinkRelation(IEnumerable<IDictionary<string, object>> elements, string linkKey, string thisSide, string otherSide, char separator = ';')
         {
             Console.WriteLine("Generating link relation {0} to {1}", thisSide, otherSide);
             var result = elements
                 .Select(element =>
-                    ProcessLink(element.GetValueOrDefault(linkKey, ""))
+                    ProcessLink(element.TryGetValue(linkKey, out var got) ? got : "", separator)
                         .Select((link, position) =>
                             new Dictionary<string, object>
                             {

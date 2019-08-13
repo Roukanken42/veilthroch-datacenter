@@ -60,7 +60,10 @@ namespace VeiltrochDatacenter {
                     : new Dictionary<string, object>()
             );
 
-            var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant);
+            var itemSkillLinkData = ResolveLinkSkillIds(dataCenter.Root, itemData);
+
+            
+            var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant, itemSkillLinkData);
             
             var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
             var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
@@ -97,7 +100,7 @@ namespace VeiltrochDatacenter {
 
             var form = new MultipartFormDataContent
             {
-//                {ElementsContent(items), "items"}, 
+                {ElementsContent(items), "items"}, 
 //                {ElementsContent(passivities), "passivities"},
 //                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
 //                {ElementsContent(passivityCategories), "passivity_categories"},
@@ -107,14 +110,57 @@ namespace VeiltrochDatacenter {
 //                {ElementsContent(enchantData), "enchant_data"},
 //                {ElementsContent(enchantEffects), "enchant_effects"},
 //                {ElementsContent(enchantStats), "enchant_stats"},
-                {ElementsContent(abnormals), "abnormals"},
-                {ElementsContent(abnormalEffects), "abnormal_effects"},
+//                {ElementsContent(abnormals), "abnormals"},
+//                {ElementsContent(abnormalEffects), "abnormal_effects"},
             };
 
             Console.WriteLine("Gzipped !");
 
 //            await UploadData("http://127.0.0.1:8000/analyse/", form);
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
+        }
+
+        private static IEnumerable<Dictionary<string, object>> ResolveLinkSkillIds(DataCenterElement root, IEnumerable<IDictionary<string, object>> items)
+        {
+            Console.WriteLine("Processing linkSkillIds");
+            var skills = root
+                .Children("SkillData")
+                .Select(e => e.Children("Skill"))
+                .SelectMany(e => e);
+//                .ToDictionary(e => e["id"].AsInt32, e => e);
+
+            var skillsMap = new Dictionary<int, DataCenterElement>();
+
+            foreach (var skill in skills)
+            {
+                skillsMap[skill["id"].AsInt32] = skill;
+            }
+            
+            Console.WriteLine("SkillData mapping created");
+
+            return items.Select(item =>
+            {
+
+                item.TryGetValue("linkSkillId", out var sId);
+                if (!(sId is int id) || id == 0) return new Dictionary<string, object>();
+
+                if (!skillsMap.TryGetValue(id, out var skill))
+                    return new Dictionary<string, object>();
+
+                var abnormals = skill.Descendants("AbnormalityOnCommon").ToList();
+                if (abnormals.Count < 1) return new Dictionary<string, object>();
+
+                var hasAbnormal = abnormals.First()
+                    .Attributes.TryGetValue("id", out var abnormalId);
+
+                if (!hasAbnormal || abnormalId.AsInt32 == 0) return new Dictionary<string, object>();
+
+                return new Dictionary<string, object>()
+                {
+                    {"id", item["id"]},
+                    {"linkAbnormalityId", abnormalId.AsInt32}
+                };
+            });
         }
 
         private static IEnumerable<IDictionary<string, object>> GenerateLinkRelation(IEnumerable<IDictionary<string, object>> elements, string linkKey, string thisSide, string otherSide, char separator = ';')

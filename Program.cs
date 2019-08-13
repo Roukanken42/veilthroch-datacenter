@@ -91,27 +91,24 @@ namespace VeiltrochDatacenter {
                 new Dictionary<string, string>{{ "abnormalityId", "id" }, { "iconName", "icon" }}
             );
             var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons);
-            
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
-            var abnormalEffectAbnormalRelation = GenerateXmlChildRelation(abnormalEffects, "abnormality_effect", "abnormality").ToList();
 
             
 
             var form = new MultipartFormDataContent
             {
-                {ElementsContent(items), "items"}, 
-                {ElementsContent(passivities), "passivities"},
-                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
-                {ElementsContent(passivityCategories), "passivity_categories"},
-                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
-                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
-                {ElementsContent(equipmentData), "equipment_data"}, 
-                {ElementsContent(enchantData), "enchant_data"},
-                {ElementsContent(enchantEffects), "enchant_effects"},
-                {ElementsContent(enchantStats), "enchant_stats"},
+//                {ElementsContent(items), "items"}, 
+//                {ElementsContent(passivities), "passivities"},
+//                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+//                {ElementsContent(passivityCategories), "passivity_categories"},
+//                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
+//                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
+//                {ElementsContent(equipmentData), "equipment_data"}, 
+//                {ElementsContent(enchantData), "enchant_data"},
+//                {ElementsContent(enchantEffects), "enchant_effects"},
+//                {ElementsContent(enchantStats), "enchant_stats"},
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalEffects), "abnormal_effects"},
-                {ElementsContent(abnormalEffectAbnormalRelation), "abnormal_effect_to_abnormal"},
             };
 
             Console.WriteLine("Gzipped !");
@@ -177,17 +174,27 @@ namespace VeiltrochDatacenter {
             });
         }
 
+        /***
+         * Caution! First parameter is special (on purpose) - ids not existing in first won't be in result
+         */
         private static List<Dictionary<string, object>> JoinElementsByKey(string key, params IEnumerable<IDictionary<string,object>>[] elementLists)
         {
-            var result = new Dictionary<object, Dictionary<string, object>>();
+            Dictionary<object, Dictionary<string, object>> result = null;
 
             foreach (var elementList in elementLists) {
+                if (result == null)
+                {
+                    result = elementList.ToDictionary(e => e["id"], e => e.ToDictionary(e => e.Key, e => e.Value));
+                    continue;
+                }
+                
                 foreach (var element in elementList)
                 {
                     if (!element.TryGetValue(key, out var id))
                         continue;
                     
-                    var merged = result.GetValueOrDefault(id, new Dictionary<string, object>());
+                    if(!result.TryGetValue(id, out var merged))
+                        continue;
 
                     foreach (var attribute in element) {
                         merged[attribute.Key] = attribute.Value;
@@ -267,7 +274,7 @@ namespace VeiltrochDatacenter {
             if (element.Parent.Attributes.TryGetValue("id", out var parentId))
             {
                 attributes["parent_id"] = parentId.Value;
-                attributes["element_position"] = element.Siblings()
+                attributes["element_position"] = element.Parent.Children()
                     .Where(sibling => sibling.Name == element.Name)
                     .TakeWhile(sibling => !sibling.Equals(element))
                     .Count();

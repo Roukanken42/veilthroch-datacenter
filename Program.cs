@@ -97,9 +97,10 @@ namespace VeiltrochDatacenter {
             var crystals = ExtractElements(dataCenter.Root, "CustomizingItems", "CustomizingItem").ToList();
             var crystalToPassivity = GenerateLinkRelation(crystals, "passivityLink", "crystal", "passivity");
             
+            Console.Write("Compressing... ");
             var form = new MultipartFormDataContent
             {
-//                {ElementsContent(items), "items"}, 
+                {ElementsContent(items), "items"}, 
 //                {ElementsContent(passivities), "passivities"},
 //                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
 //                {ElementsContent(passivityCategories), "passivity_categories"},
@@ -117,7 +118,7 @@ namespace VeiltrochDatacenter {
             };
 
 
-            Console.WriteLine("Gzipped !");
+            Console.WriteLine("done !");
 
 //            await UploadData("http://127.0.0.1:8000/analyse/", form);
             await UploadData("http://127.0.0.1:8000/upload/items/", form);

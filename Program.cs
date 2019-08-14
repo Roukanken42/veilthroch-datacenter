@@ -44,9 +44,18 @@ namespace VeiltrochDatacenter {
                 ExtractElements(dataCenter.Root, "AbnormalityIconData", "Icon"), 
                 new Dictionary<string, string>{{ "abnormalityId", "id" }, { "iconName", "icon" }}
             );
+            
+            var abnormalKinds = JoinElementsByKey(
+                "id",
+                abnormalData
+                    .Select(a => a["kind"])
+                    .ToHashSet()
+                    .Select(x => new Dictionary<string, object>{{"id", x}}),
+                ExtractElements(dataCenter.Root, "StrSheet_AbnormalityKind", "String")
+            );
             var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons).ToList();
             var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
-
+            
             
             var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
             var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
@@ -96,11 +105,28 @@ namespace VeiltrochDatacenter {
 
             var crystals = ExtractElements(dataCenter.Root, "CustomizingItems", "CustomizingItem").ToList();
             var crystalToPassivity = GenerateLinkRelation(crystals, "passivityLink", "crystal", "passivity");
+
+            var glyphData = ExtractElements(dataCenter.Root, "CrestData", "CrestItem");
+            var glyphStrings = ExtractElements(dataCenter.Root, "StrSheet_Crest", "String");
+            var glyphs = JoinElementsByKey("id", glyphData, glyphStrings).ToList();
+
+            var glyphIds = glyphs.Select(g => (int) g["id"]).ToHashSet();
             
+            items = items.Select(item =>
+            {
+                // Filter glyphs because BH be BH and have non existing non-0 links in dc...
+                if (item.TryGetValue("linkCrestId", out var id) && !glyphIds.Contains((int) id))
+                    item["linkCrestId"] = 0;
+
+                return item;
+            }).ToList();
+
+
             Console.Write("Compressing... ");
+            
             var form = new MultipartFormDataContent
             {
-                {ElementsContent(items), "items"}, 
+//                {ElementsContent(items), "items"}, 
 //                {ElementsContent(passivities), "passivities"},
 //                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
 //                {ElementsContent(passivityCategories), "passivity_categories"},
@@ -110,11 +136,12 @@ namespace VeiltrochDatacenter {
 //                {ElementsContent(enchantData), "enchant_data"},
 //                {ElementsContent(enchantEffects), "enchant_effects"},
 //                {ElementsContent(enchantStats), "enchant_stats"},
-//                {ElementsContent(abnormals), "abnormals"},
+                {ElementsContent(abnormals), "abnormals"},
+                {ElementsContent(abnormalKinds), "abnormality_kind"},
 //                {ElementsContent(abnormalEffects), "abnormal_effects"},
-                
-                {ElementsContent(crystals), "crystals"},
-                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
+//                {ElementsContent(crystals), "crystals"},
+//                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
+//                {ElementsContent(glyphs), "glyphs"},
             };
 
 

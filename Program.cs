@@ -38,6 +38,15 @@ namespace VeiltrochDatacenter {
             var dataCenter = new DataCenter(dc.File.Open(FileMode.Open), DataCenterMode.Persistent, DataCenterStringOptions.None);
             Console.WriteLine("Loaded DC");
             
+            var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
+            var abnormalStrings = ExtractElements(dataCenter.Root, "StrSheet_Abnormality", "String");
+            var abnormalIcons = MapKeys(
+                ExtractElements(dataCenter.Root, "AbnormalityIconData", "Icon"), 
+                new Dictionary<string, string>{{ "abnormalityId", "id" }, { "iconName", "icon" }}
+            );
+            var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons).ToList();
+            var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
+
             
             var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
             var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
@@ -60,7 +69,7 @@ namespace VeiltrochDatacenter {
                     : new Dictionary<string, object>()
             );
 
-            var itemSkillLinkData = ResolveLinkSkillIds(dataCenter.Root, itemData);
+            var itemSkillLinkData = ResolveLinkSkillIds(dataCenter.Root, itemData, abnormals);
 
             
             var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant, itemSkillLinkData);
@@ -84,23 +93,13 @@ namespace VeiltrochDatacenter {
             var enchantData = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant");
             var enchantEffects = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "Effect"));
             var enchantStats = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "BasicStat"));
-            
-            
-            
-            var abnormalData = ExtractElements(dataCenter.Root, "Abnormality", "Abnormal");
-            var abnormalStrings = ExtractElements(dataCenter.Root, "StrSheet_Abnormality", "String");
-            var abnormalIcons = MapKeys(
-                ExtractElements(dataCenter.Root, "AbnormalityIconData", "Icon"), 
-                new Dictionary<string, string>{{ "abnormalityId", "id" }, { "iconName", "icon" }}
-            );
-            var abnormals = JoinElementsByKey("id", abnormalData, abnormalStrings, abnormalIcons);
-            var abnormalEffects = GenerateIds(ExtractElements(dataCenter.Root, "Abnormality", "Abnormal", "AbnormalityEffect")).ToList();
 
+            var crystals = ExtractElements(dataCenter.Root, "CustomizingItems", "CustomizingItem").ToList();
+            var crystalToPassivity = GenerateLinkRelation(crystals, "passivityLink", "crystal", "passivity");
             
-
             var form = new MultipartFormDataContent
             {
-                {ElementsContent(items), "items"}, 
+//                {ElementsContent(items), "items"}, 
 //                {ElementsContent(passivities), "passivities"},
 //                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
 //                {ElementsContent(passivityCategories), "passivity_categories"},
@@ -112,7 +111,11 @@ namespace VeiltrochDatacenter {
 //                {ElementsContent(enchantStats), "enchant_stats"},
 //                {ElementsContent(abnormals), "abnormals"},
 //                {ElementsContent(abnormalEffects), "abnormal_effects"},
+                
+                {ElementsContent(crystals), "crystals"},
+                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
             };
+
 
             Console.WriteLine("Gzipped !");
 
@@ -120,15 +123,15 @@ namespace VeiltrochDatacenter {
             await UploadData("http://127.0.0.1:8000/upload/items/", form);
         }
 
-        private static IEnumerable<Dictionary<string, object>> ResolveLinkSkillIds(DataCenterElement root, IEnumerable<IDictionary<string, object>> items)
+        private static IEnumerable<Dictionary<string, object>> ResolveLinkSkillIds(DataCenterElement root, IEnumerable<IDictionary<string, object>> items, IEnumerable<IDictionary<string, object>> abnormals)
         {
             Console.WriteLine("Processing linkSkillIds");
             var skills = root
                 .Children("SkillData")
-                .Select(e => e.Children("Skill"))
-                .SelectMany(e => e);
+                .SelectMany(e => e.Children("Skill"));
 //                .ToDictionary(e => e["id"].AsInt32, e => e);
 
+            var abnormalIds = abnormals.Select(a => (int) a["id"]).ToHashSet();
             var skillsMap = new Dictionary<int, DataCenterElement>();
 
             foreach (var skill in skills)
@@ -147,19 +150,34 @@ namespace VeiltrochDatacenter {
                 if (!skillsMap.TryGetValue(id, out var skill))
                     return new Dictionary<string, object>();
 
-                var abnormals = skill.Descendants("AbnormalityOnCommon").ToList();
-                if (abnormals.Count < 1) return new Dictionary<string, object>();
+                var effects = skill
+                    .Descendants("TargetingList")
+                    .SelectMany(e => e.Descendants("Effect"))
+                    .ToList();
+                if (effects.Count < 1) return new Dictionary<string, object>();
 
-                var hasAbnormal = abnormals.First()
-                    .Attributes.TryGetValue("id", out var abnormalId);
+                var effect = effects.First();
 
-                if (!hasAbnormal || abnormalId.AsInt32 == 0) return new Dictionary<string, object>();
+                var abnormal = effect.Descendants("AbnormalityOnCommon").FirstOrDefault();
+                var hpDiff = effect.Descendants("HpDiff").FirstOrDefault();
+                var mpDiff = effect.Descendants("MpDiff").FirstOrDefault();
 
-                return new Dictionary<string, object>()
+                var result = new Dictionary<string, object>()
                 {
                     {"id", item["id"]},
-                    {"linkAbnormalityId", abnormalId.AsInt32}
                 };
+
+                if (abnormal != null && abnormal.Attributes.TryGetValue("id", out var abnormalId) &&
+                    abnormalId.AsInt32 != 0 && abnormalIds.Contains(abnormalId.AsInt32))
+                    result["skillEffectAbnormalityCommon"] = abnormalId.AsInt32;
+
+                if (hpDiff != null && hpDiff.Attributes.TryGetValue("value", out var hpValue))
+                    result["skillEffectHpDiff"] = hpValue.AsSingle;
+
+                if (mpDiff != null && mpDiff.Attributes.TryGetValue("value", out var mpValue))
+                    result["skillEffectMpDiff"] = mpValue.AsInt32;
+
+                return result;
             });
         }
 
@@ -351,9 +369,11 @@ namespace VeiltrochDatacenter {
                 {
                     bool _ => "bool",
                     float _ => "float",
+                    double _ => "float",
                     int _ => "int",
+                    long _ => "int",
                     string _ => "str",
-                    _ => throw new ArgumentException("Wtf did you even get this from ??")
+                    _ => throw new ArgumentException("Wtf did you even get this from ?? Ah " + key)
                 };
             }
         }

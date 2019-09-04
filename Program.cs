@@ -126,29 +126,32 @@ namespace VeiltrochDatacenter {
             
             var form = new MultipartFormDataContent
             {
-//                {ElementsContent(items), "items"}, 
-//                {ElementsContent(passivities), "passivities"},
-//                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
-//                {ElementsContent(passivityCategories), "passivity_categories"},
-//                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
-//                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
-//                {ElementsContent(equipmentData), "equipment_data"}, 
-//                {ElementsContent(enchantData), "enchant_data"},
-//                {ElementsContent(enchantEffects), "enchant_effects"},
-//                {ElementsContent(enchantStats), "enchant_stats"},
+                {new StringContent("EU"), "region"},
+                {ElementsContent(items), "items"}, 
+                {ElementsContent(passivities), "passivities"},
+                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
+                {ElementsContent(passivityCategories), "passivity_categories"},
+                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
+                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
+                {ElementsContent(equipmentData), "equipment_data"}, 
+                {ElementsContent(enchantData), "enchant_data"},
+                {ElementsContent(enchantEffects), "enchant_effects"},
+                {ElementsContent(enchantStats), "enchant_stats"},
                 {ElementsContent(abnormals), "abnormals"},
                 {ElementsContent(abnormalKinds), "abnormality_kind"},
-//                {ElementsContent(abnormalEffects), "abnormal_effects"},
-//                {ElementsContent(crystals), "crystals"},
-//                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
-//                {ElementsContent(glyphs), "glyphs"},
+                {ElementsContent(abnormalEffects), "abnormal_effects"},
+                {ElementsContent(crystals), "crystals"},
+                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
+                {ElementsContent(glyphs), "glyphs"},
             };
 
 
             Console.WriteLine("done !");
 
 //            await UploadData("http://127.0.0.1:8000/analyse/", form);
-            await UploadData("http://127.0.0.1:8000/upload/items/", form);
+            var data = await UploadData("http://127.0.0.1:8000/datacenter/process/csv/", form);
+            var fixtures = Convert.FromBase64String(data);
+            System.IO.File.WriteAllBytes(@"D:\Projects\veilthroch\fixtures\test.json.gz", fixtures);
         }
 
         private static IEnumerable<Dictionary<string, object>> ResolveLinkSkillIds(DataCenterElement root, IEnumerable<IDictionary<string, object>> items, IEnumerable<IDictionary<string, object>> abnormals)
@@ -309,7 +312,7 @@ namespace VeiltrochDatacenter {
             return GZippedCsvContent(ExtractCsv(elements));
         }
         
-        public static async Task<HttpResponseMessage> UploadData(string uri, HttpContent content) {
+        public static async Task<string> UploadData(string uri, HttpContent content) {
             using var handler = new HttpClientHandler {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
@@ -322,9 +325,11 @@ namespace VeiltrochDatacenter {
             
             var response = await client.PostAsync(uri, content);
             response.EnsureSuccessStatusCode();
-            Console.WriteLine(response.Content.ToString());
-
-            return response;
+            
+            var result = await response.Content.ReadAsStringAsync();
+//            Console.Write(result);
+            
+            return result;
         }
 
         public static byte[] GzipByte(byte[] bytes) {  

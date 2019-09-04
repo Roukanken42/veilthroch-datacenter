@@ -126,7 +126,7 @@ namespace VeiltrochDatacenter {
             
             var form = new MultipartFormDataContent
             {
-                {new StringContent("EU"), "region"},
+                {new StringContent("EUR"), "region"},
                 {ElementsContent(items), "items"}, 
                 {ElementsContent(passivities), "passivities"},
                 {ElementsContent(itemPassivityRelation), "item_to_passivity"},
@@ -151,7 +151,7 @@ namespace VeiltrochDatacenter {
 //            await UploadData("http://127.0.0.1:8000/analyse/", form);
             var data = await UploadData("http://127.0.0.1:8000/datacenter/process/csv/", form);
             var fixtures = Convert.FromBase64String(data);
-            System.IO.File.WriteAllBytes(@"D:\Projects\veilthroch\fixtures\test.json.gz", fixtures);
+            System.IO.File.WriteAllBytes(@"C:\Projects\veilthroch\fixtures\test.json.gz", fixtures);
         }
 
         private static IEnumerable<Dictionary<string, object>> ResolveLinkSkillIds(DataCenterElement root, IEnumerable<IDictionary<string, object>> items, IEnumerable<IDictionary<string, object>> abnormals)

@@ -10,6 +10,7 @@ namespace VeiltrochDatacenter.Extract
     {
         public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
         {
+            Console.WriteLine("Exporting abnormalities...");
             var abnormals = new Transform(Utils.FindElementsAsDicts(root, "Abnormality", "Abnormal"))
                 .Rename("AbnormalityEffect", "effects")
                 .Rename("time", "duration")
@@ -19,6 +20,8 @@ namespace VeiltrochDatacenter.Extract
                 .ToLong("duration")
                 .ToBool("isVisible")
 //                .ToArray("bySkillCategory")
+                .Add("region", "eu")
+                .Add("patch", 83000)
                 .Finish()
                 .ToList();
             

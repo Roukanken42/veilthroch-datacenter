@@ -36,6 +36,17 @@ namespace VeiltrochDatacenter.Extract
             return this;
         }
         
+        public Transform Add(string name, object value)
+        {    
+            data = data.Select(elem =>
+            {
+                elem[name] = value;
+                return elem;
+            });
+            
+            return this;
+        }
+        
         public Transform ToLong(string name)
         {    
             data = data.Select(elem =>

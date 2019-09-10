@@ -40,7 +40,7 @@ namespace VeiltrochDatacenter {
             Console.WriteLine("Loaded DC");
 
 
-            var data = new Extract.Extract(dataCenter.Root).Json();
+            var fixtures = new Extract.Extract(dataCenter.Root).Json();
 
 //            
 //            var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
@@ -132,10 +132,12 @@ namespace VeiltrochDatacenter {
 //            };
 //
 //
-//            Console.WriteLine("done !");
+            Console.WriteLine("done !");
+            Console.WriteLine("Uploading...");
 //
 ////            await UploadData("http://127.0.0.1:8000/analyse/", form);
-//            var data = await UploadData("http://127.0.0.1:8000/datacenter/process/csv/", form);
+            File.WriteAllText("test.json", fixtures);
+            var data = await UploadData("http://127.0.0.1:8000/datacenter/upload", new StringContent(fixtures));
 //            var fixtures = Convert.FromBase64String(data);
 //            System.IO.File.WriteAllBytes(@"RUS.json.gz", fixtures);
         }
@@ -253,10 +255,10 @@ namespace VeiltrochDatacenter {
             content.Headers.ContentEncoding.Add("deflate");
             
             var response = await client.PostAsync(uri, content);
-            response.EnsureSuccessStatusCode();
+//            response.EnsureSuccessStatusCode();
             
             var result = await response.Content.ReadAsStringAsync();
-//            Console.Write(result);
+            Console.Write(result);
             
             return result;
         }

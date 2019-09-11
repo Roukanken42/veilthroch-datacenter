@@ -20,7 +20,8 @@ namespace VeiltrochDatacenter.Extract
             var result = new Dictionary<string, IEnumerable<Dictionary<string, object>>>()
             {
                 {"abnormalities", Abnormalities.Extract(root)},
-                {"passivities", Passivities.Extract(root)}
+                {"passivities", Passivities.Extract(root)},
+                {"passivity_categories", Passivities.ExtractCategories(root)},
             };
 
             foreach (var data in result.Values)

@@ -40,6 +40,15 @@ namespace VeiltrochDatacenter.Extract
             Console.WriteLine("Exporting passivity categories...");
             var categories = Utils.FindElementsAsDicts(root, "EquipmentEnchantData", "PassivityCategoryData", "Category").ToList();
 
+            foreach (var category in categories)
+            {
+                Transform.Rename(category, "unchangeable", "isRollable");
+                Transform.IfHas(category, "isRollable", val => !(bool) val);
+                
+                Transform.ToIntList(category, "passivityLink", ',');
+//                Transform.ToLinks(category, "passivityLink", "passivities");
+                Transform.Rename(category, "passivityLink", "passivities");
+            }
             return categories;
         }
     }

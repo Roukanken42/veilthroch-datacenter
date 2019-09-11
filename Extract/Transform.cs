@@ -32,6 +32,14 @@ namespace VeiltrochDatacenter.Extract
 
             elem[name] = val == "true" ? true : false;
         }
+        
+        public static void ToIntList(Dictionary<string, object> elem, string name, params char[] separators)
+        {
+            if (!elem.ContainsKey(name)) return;
+
+            var values = ((string) elem[name]).Split(separators);
+            elem[name] = values.Select(long.Parse).ToList();
+        }
     
 
         private static object InferTypeHelper(string value)
@@ -55,6 +63,18 @@ namespace VeiltrochDatacenter.Extract
         {
             if (elem.ContainsKey(name))
                 elem[name] = f(elem[name]);
-        }        
+        }
+        
+        public static void ToLinks(Dictionary<string, object> elem, string name, string linkTo)
+        {    
+            if (!elem.ContainsKey(name)) return;
+            var elems = (List<long>) elem[name];
+
+            elem[name] = elems.Select(id => new Dictionary<string, object>
+            {
+                {"linkTo", linkTo},
+                {"id", id}
+            }).ToList();
+        }
     }
 }

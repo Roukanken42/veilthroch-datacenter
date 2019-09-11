@@ -15,13 +15,12 @@ namespace VeiltrochDatacenter.Extract
                 .Rename("AbnormalityEffect", "effects")
                 .Rename("time", "duration")
                 .Rename("infinity", "isInfinite")
-                .Rename("isShow", "isVisible")
-                .Rename("isHideOnRefresh", "doesHideOnRefresh")
+                .ToBool("isShow")
+                .Custom("isShow", val => !(bool) val)
+                .Rename("isShow", "isHidden")
+                .Rename("isHideOnRefresh", "isHiddenOnRefresh")
                 .ToLong("duration")
-                .ToBool("isVisible")
 //                .ToArray("bySkillCategory")
-                .Add("region", "eu")
-                .Add("patch", 83000)
                 .Finish()
                 .ToList();
             

@@ -15,12 +15,27 @@ namespace VeiltrochDatacenter.Extract
             this.root = root;
         }
 
-        public Dictionary<string, object> Data()
+        public Dictionary<string, IEnumerable<Dictionary<string, object>>> Data()
         {
-            return new Dictionary<string, object>()
+            var result = new Dictionary<string, IEnumerable<Dictionary<string, object>>>()
             {
                 {"abnormalities", Abnormalities.Extract(root)}
             };
+
+            result = result.ToDictionary(
+                entry => entry.Key, 
+                entry => AddRegionAndPatch(entry.Value, "eu", 83000)
+            );
+
+            return result;
+        }
+
+        private static IEnumerable<Dictionary<string, object>> AddRegionAndPatch(IEnumerable<Dictionary<string, object>> data, string region, int patch)
+        {
+            return new Transform(data)
+                .Add("region", region)
+                .Add("patch", patch)
+                .Finish();
         }
         
         public string Json()

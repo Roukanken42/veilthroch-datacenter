@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.SharpZipLib;
+using Octokit;
 
 
 namespace VeiltrochDatacenter.Extract
@@ -71,6 +72,20 @@ namespace VeiltrochDatacenter.Extract
 
                 
                 elem[name] = val == "true" ? true : false;
+                return elem;
+            });
+            
+            return this;
+        }
+
+        public delegate object SimpleTransform(object x);
+        public Transform Custom(string name, SimpleTransform f)
+        {    
+            data = data.Select(elem =>
+            {
+                if (elem.ContainsKey(name)) 
+                    elem[name] = f(elem[name]);
+
                 return elem;
             });
             

@@ -23,20 +23,21 @@ namespace VeiltrochDatacenter.Extract
                 {"passivities", Passivities.Extract(root)}
             };
 
-            result = result.ToDictionary(
-                entry => entry.Key, 
-                entry => AddRegionAndPatch(entry.Value, "eu", 83000)
-            );
+            foreach (var data in result.Values)
+            {
+                AddRegionAndPatch(data, "eu", 83000);
+            }
 
             return result;
         }
 
-        private static IEnumerable<Dictionary<string, object>> AddRegionAndPatch(IEnumerable<Dictionary<string, object>> data, string region, int patch)
+        private static void AddRegionAndPatch(IEnumerable<Dictionary<string, object>> data, string region, int patch)
         {
-            return new Transform(data)
-                .Add("region", region)
-                .Add("patch", patch)
-                .Finish();
+            foreach (var obj in data)
+            {
+                obj["region"] = region;
+                obj["patch"] = patch;
+            }
         }
         
         public string Json()

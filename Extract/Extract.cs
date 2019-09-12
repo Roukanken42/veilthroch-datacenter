@@ -21,7 +21,7 @@ namespace VeiltrochDatacenter.Extract
             {
                 {"abnormalities", Abnormalities.Extract(root)},
                 {"passivities", Passivities.Extract(root)},
-                {"passivity_categories", Passivities.ExtractCategories(root)},
+                {"passivityCategories", Passivities.ExtractCategories(root)},
             };
 
             foreach (var data in result.Values)

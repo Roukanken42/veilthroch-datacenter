@@ -22,6 +22,7 @@ namespace VeiltrochDatacenter.Extract
                 {"abnormalities", Abnormalities.Extract(root)},
                 {"passivities", Passivities.Extract(root)},
                 {"passivityCategories", Passivities.ExtractCategories(root)},
+                {"glyphs", Glyphs.Extract(root)},
             };
 
             foreach (var data in result.Values)

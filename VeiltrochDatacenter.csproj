@@ -153,6 +153,7 @@
         <Compile Include="CsvExport.cs" />
         <Compile Include="Extract\Abnormalities.cs" />
         <Compile Include="Extract\Extract.cs" />
+        <Compile Include="Extract\Glyphs.cs" />
         <Compile Include="Extract\Passivities.cs" />
         <Compile Include="Extract\Utils.cs" />
         <Compile Include="Extract\Transform.cs" />

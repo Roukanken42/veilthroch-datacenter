@@ -25,6 +25,7 @@ namespace VeiltrochDatacenter.Extract
                 {"passivities", Passivities.Extract(root)},
                 {"passivityCategories", Passivities.ExtractCategories(root)},
                 {"glyphs", Glyphs.Extract(root)},
+                {"enchantData", Gear.ExtractEnchantData(root)},
             };
 
             foreach (var data in result.Values)

@@ -1,4 +1,5 @@
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Alkahest.Core.Data;
@@ -17,6 +18,7 @@ namespace VeiltrochDatacenter.Extract
 
         public Dictionary<string, IEnumerable<Dictionary<string, object>>> Data()
         {
+            Console.WriteLine("Exporting...");
             var result = new Dictionary<string, IEnumerable<Dictionary<string, object>>>()
             {
                 {"abnormalities", Abnormalities.Extract(root)},

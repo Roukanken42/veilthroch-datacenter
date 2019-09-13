@@ -10,7 +10,7 @@ namespace VeiltrochDatacenter.Extract
     {
         public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
         {
-            Console.WriteLine("Exporting glyphs...");
+            Console.WriteLine(" -  glyphs");
             
 //            var glyphData = ExtractElements(dataCenter.Root, "CrestData", "CrestItem");
 //            var glyphStrings = ExtractElements(dataCenter.Root, "StrSheet_Crest", "String");

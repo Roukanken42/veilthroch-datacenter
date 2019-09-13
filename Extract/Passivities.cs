@@ -10,7 +10,7 @@ namespace VeiltrochDatacenter.Extract
     {
         public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
         {
-            Console.WriteLine("Exporting passivities...");
+            Console.WriteLine(" -  passivities");
             var passives = Utils.FindElementsAsDicts(root, "Passivity", "Passive").ToList();
 
             foreach (var passive in passives)
@@ -37,7 +37,7 @@ namespace VeiltrochDatacenter.Extract
         
         public static IEnumerable<Dictionary<string, object>> ExtractCategories(DataCenterElement root)
         {
-            Console.WriteLine("Exporting passivity categories...");
+            Console.WriteLine(" -  passivity categories");
             var categories = Utils.FindElementsAsDicts(root, "EquipmentEnchantData", "PassivityCategoryData", "Category").ToList();
 
             foreach (var category in categories)

@@ -10,7 +10,7 @@ namespace VeiltrochDatacenter.Extract
     {
         public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
         {
-            Console.WriteLine("Exporting abnormalities...");
+            Console.WriteLine(" -  abnormalities");
             
             var abnormalKinds = Utils.FindElementsAsDicts(root, "StrSheet_AbnormalityKind", "String")
                 .ToDictionary(elem => elem["id"], elem => elem);

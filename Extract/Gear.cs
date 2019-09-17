@@ -36,5 +36,37 @@ namespace VeiltrochDatacenter.Extract
             
             return data;
         }
+        
+        public static IEnumerable<Dictionary<string, object>> ExtractEquipmentData (DataCenterElement root)
+        {
+            Console.WriteLine(" -  equipment data");
+
+            var data = Utils.FindElementsAsDicts(root, "EquipmentData", "Equipment").ToList();
+
+            foreach (var item in data)
+            {
+                Transform.Rename(item,"equipmentId", "id");
+                Transform.Rename(item,"countOfSlots", "crystalCount");
+                Transform.Rename(item,"minAtk", "attackMin");
+                Transform.Rename(item,"maxAtk", "attackMax");
+                Transform.Rename(item,"def", "defense");
+                Transform.Rename(item,"magicalDefence", "magicalDefense");
+                Transform.Rename(item,"physicalDefence", "physicalDefense");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.Rename(item,"BasicStat", "stats");
+                Transform.ToLong(item,"impact");
+                Transform.ToLong(item,"balance");
+                Transform.ToBool(item, "lock");
+                Transform.IfHas(item, "part", o => ((string) o).ToUpper());
+                Transform.IfHas(item, "type", o => ((string) o).ToUpper());
+            }
+            
+            return data;
+        }
     }
 }

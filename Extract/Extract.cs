@@ -27,11 +27,13 @@ namespace VeiltrochDatacenter.Extract
                 {"glyphs", Glyphs.Extract(root)},
                 {"enchantData", Gear.ExtractEnchantData(root)},
                 {"equipmentData", Gear.ExtractEquipmentData(root)},
+                {"cards", Cards.ExtractCards(root)},
+                {"card_combines", Cards.ExtractCombines(root)},
             };
 
             foreach (var data in result.Values)
             {
-                AddRegionAndPatch(data, "eu", 83000);
+                AddRegionAndPatch(data, "kr", 87);
             }
 
             return result;

@@ -17,6 +17,7 @@ namespace VeiltrochDatacenter.Extract
             elem.Remove(oldName);
         }
 
+        
         public static void ToLong(Dictionary<string, object> elem, string name)
         {
             if (!elem.ContainsKey(name)) return;
@@ -55,6 +56,26 @@ namespace VeiltrochDatacenter.Extract
         {    
             if (!elem.ContainsKey(name)) return ;
             elem[name] = InferTypeHelper((string) elem[name]);
+        }
+        
+        private static bool IsDefault(object value)
+        {
+            return value switch
+            {
+                int i => i == 0,
+                float f => Math.Abs(f) < 0.0000001,
+                string s => s == "",
+                _ => false
+            };
+        }
+            
+        public static void ToNullable(Dictionary<string, object> elem, string name)
+        {    
+            if (!elem.ContainsKey(name)) return ;
+            if (IsDefault(elem[name]))
+            {
+                elem[name] = null;
+            }
         }
         
         public delegate object SimpleTransform(object x);

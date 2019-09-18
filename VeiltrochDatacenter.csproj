@@ -152,10 +152,12 @@
     <Compile Include="Alkahest\Packager\IAsset.cs" />
     <Compile Include="CsvExport.cs" />
     <Compile Include="Extract\Abnormalities.cs" />
+    <Compile Include="Extract\Cards.cs" />
     <Compile Include="Extract\Extract.cs" />
     <Compile Include="Extract\Gear.cs" />
     <Compile Include="Extract\Glyphs.cs" />
     <Compile Include="Extract\Passivities.cs" />
+    <Compile Include="Extract\StringResolver.cs" />
     <Compile Include="Extract\Utils.cs" />
     <Compile Include="Extract\Transform.cs" />
     <Compile Include="Program.cs" />

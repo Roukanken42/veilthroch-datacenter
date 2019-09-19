@@ -82,8 +82,10 @@ namespace VeiltrochDatacenter.Extract
 
         private static string ParseImageUrl(string url)
         {
-            // TODO: !
-            return url;
+            url = url.Replace("img://__", "");
+            url = url.Replace(".", "/");
+            
+            return "datacenter/" + url.ToLower() + ".png";
         }
     }
 }

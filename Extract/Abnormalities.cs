@@ -8,14 +8,14 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Abnormalities
     {
-        public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> Extract (Extract extract)
         {
             Console.WriteLine(" -  abnormalities");
             
-            var abnormalKinds = Utils.FindElementsAsDicts(root, "StrSheet_AbnormalityKind", "String")
+            var abnormalKinds = Utils.FindElementsAsDicts(extract.root, "StrSheet_AbnormalityKind", "String")
                 .ToDictionary(elem => elem["id"], elem => elem);
 
-            var abnormals = Utils.FindElementsAsDicts(root, "Abnormality", "Abnormal").ToList();
+            var abnormals = Utils.FindElementsAsDicts(extract.root, "Abnormality", "Abnormal").ToList();
 
             foreach (var abnormal in abnormals)
             {
@@ -38,8 +38,8 @@ namespace VeiltrochDatacenter.Extract
             abnormals.Select(a => (List<Dictionary<string, object>>) a["effects"]).SelectMany(a => a);
             
 
-            var strings = Utils.FindElementsAsDicts(root, "StrSheet_Abnormality", "String");
-            var icons = Utils.FindElementsAsDicts(root, "AbnormalityIconData", "Icon").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Abnormality", "String");
+            var icons = Utils.FindElementsAsDicts(extract.root, "AbnormalityIconData", "Icon").ToList();
 
             foreach (var icon in icons)
             {

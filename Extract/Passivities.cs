@@ -8,10 +8,10 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Passivities
     {
-        public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> Extract (Extract extract)
         {
             Console.WriteLine(" -  passivities");
-            var passives = Utils.FindElementsAsDicts(root, "Passivity", "Passive").ToList();
+            var passives = Utils.FindElementsAsDicts(extract.root, "Passivity", "Passive").ToList();
 
             foreach (var passive in passives)
             {
@@ -22,8 +22,8 @@ namespace VeiltrochDatacenter.Extract
             }
                 
 
-            var strings = Utils.FindElementsAsDicts(root, "StrSheet_Passivity", "String");
-            var icons = Utils.FindElementsAsDicts(root, "PassivityIconData", "Icon").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Passivity", "String");
+            var icons = Utils.FindElementsAsDicts(extract.root, "PassivityIconData", "Icon").ToList();
 
             foreach (var icon in icons)
             {
@@ -35,10 +35,10 @@ namespace VeiltrochDatacenter.Extract
             return result;
         }
         
-        public static IEnumerable<Dictionary<string, object>> ExtractCategories(DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> ExtractCategories(Extract extract)
         {
             Console.WriteLine(" -  passivity categories");
-            var categories = Utils.FindElementsAsDicts(root, "EquipmentEnchantData", "PassivityCategoryData", "Category").ToList();
+            var categories = Utils.FindElementsAsDicts(extract.root, "EquipmentEnchantData", "PassivityCategoryData", "Category").ToList();
 
             foreach (var category in categories)
             {

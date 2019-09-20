@@ -9,7 +9,7 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Extract
     {
-        private DataCenterElement root; 
+        public DataCenterElement root; 
         
         public Extract(DataCenterElement root)
         {
@@ -21,14 +21,14 @@ namespace VeiltrochDatacenter.Extract
             Console.WriteLine("Exporting...");
             var result = new Dictionary<string, IEnumerable<Dictionary<string, object>>>()
             {
-                {"abnormalities", Abnormalities.Extract(root)},
-                {"passivities", Passivities.Extract(root)},
-                {"passivityCategories", Passivities.ExtractCategories(root)},
-                {"glyphs", Glyphs.Extract(root)},
-                {"enchantData", Gear.ExtractEnchantData(root)},
-                {"equipmentData", Gear.ExtractEquipmentData(root)},
-                {"cards", Cards.ExtractCards(root)},
-                {"card_combines", Cards.ExtractCombines(root)},
+                {"abnormalities", Abnormalities.Extract(this)},
+                {"passivities", Passivities.Extract(this)},
+                {"passivityCategories", Passivities.ExtractCategories(this)},
+                {"glyphs", Glyphs.Extract(this)},
+                {"enchantData", Gear.ExtractEnchantData(this)},
+                {"equipmentData", Gear.ExtractEquipmentData(this)},
+                {"cards", Cards.ExtractCards(this)},
+                {"card_combines", Cards.ExtractCombines(this)},
             };
 
             foreach (var data in result.Values)

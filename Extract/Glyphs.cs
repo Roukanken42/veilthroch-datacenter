@@ -8,7 +8,7 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Glyphs
     {
-        public static IEnumerable<Dictionary<string, object>> Extract (DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> Extract (Extract extract)
         {
             Console.WriteLine(" -  glyphs");
             
@@ -17,8 +17,8 @@ namespace VeiltrochDatacenter.Extract
 //            var glyphs = JoinElementsByKey("id", glyphData, glyphStrings).ToList();
             
             
-            var data = Utils.FindElementsAsDicts(root, "CrestData", "CrestItem").ToList();
-            var strings = Utils.FindElementsAsDicts(root, "StrSheet_Crest", "String").ToList();
+            var data = Utils.FindElementsAsDicts(extract.root, "CrestData", "CrestItem").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Crest", "String").ToList();
 
             foreach (var item in data)
             {

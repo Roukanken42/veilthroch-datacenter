@@ -8,11 +8,11 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Gear
     {
-        public static IEnumerable<Dictionary<string, object>> ExtractEnchantData (DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> ExtractEnchantData (Extract extract)
         {
             Console.WriteLine(" -  enchant data");
 
-            var data = Utils.FindElementsAsDicts(root, "EquipmentEnchantData", "EnchantData", "Enchant").ToList();
+            var data = Utils.FindElementsAsDicts(extract.root, "EquipmentEnchantData", "EnchantData", "Enchant").ToList();
 
             foreach (var item in data)
             {
@@ -37,11 +37,11 @@ namespace VeiltrochDatacenter.Extract
             return data;
         }
         
-        public static IEnumerable<Dictionary<string, object>> ExtractEquipmentData (DataCenterElement root)
+        public static IEnumerable<Dictionary<string, object>> ExtractEquipmentData (Extract extract)
         {
             Console.WriteLine(" -  equipment data");
 
-            var data = Utils.FindElementsAsDicts(root, "EquipmentData", "Equipment").ToList();
+            var data = Utils.FindElementsAsDicts(extract.root, "EquipmentData", "Equipment").ToList();
 
             foreach (var item in data)
             {

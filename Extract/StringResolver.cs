@@ -33,6 +33,27 @@ namespace VeiltrochDatacenter.Extract
 
             _strings[name] = strings;
         }
+        
+        public void LoadStringRegions(string name, params string[] path)
+        {
+            var regions = Utils.FindElements(_root, path);
+            foreach (var region in regions)
+            {
+                var strings = new Dictionary<int, string>();
+
+                var type = region.Attributes["type"].AsString;
+
+                foreach (var str in region.Children("String"))
+                {
+                    if(!str.Attributes.TryGetValue("string", out var s)) continue;
+                    if(!str.Attributes.TryGetValue("id", out var id)) continue;
+                    
+                    strings[id.AsInt32] = s.AsString;
+                }
+                
+                _strings[name + "." + type] = strings;
+            }
+        }
 
         public string ResolveDcLink(string link)
         {

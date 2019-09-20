@@ -12,10 +12,10 @@ namespace VeiltrochDatacenter.Extract
         {
             Console.WriteLine(" -  abnormalities");
             
-            var abnormalKinds = Utils.FindElementsAsDicts(extract.root, "StrSheet_AbnormalityKind", "String")
+            var abnormalKinds = Utils.FindElementsAsDicts(extract.Root, "StrSheet_AbnormalityKind", "String")
                 .ToDictionary(elem => elem["id"], elem => elem);
 
-            var abnormals = Utils.FindElementsAsDicts(extract.root, "Abnormality", "Abnormal").ToList();
+            var abnormals = Utils.FindElementsAsDicts(extract.Root, "Abnormality", "Abnormal").ToList();
 
             foreach (var abnormal in abnormals)
             {
@@ -38,8 +38,8 @@ namespace VeiltrochDatacenter.Extract
             abnormals.Select(a => (List<Dictionary<string, object>>) a["effects"]).SelectMany(a => a);
             
 
-            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Abnormality", "String");
-            var icons = Utils.FindElementsAsDicts(extract.root, "AbnormalityIconData", "Icon").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.Root, "StrSheet_Abnormality", "String");
+            var icons = Utils.FindElementsAsDicts(extract.Root, "AbnormalityIconData", "Icon").ToList();
 
             foreach (var icon in icons)
             {

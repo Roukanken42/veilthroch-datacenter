@@ -12,7 +12,7 @@ namespace VeiltrochDatacenter.Extract
         {
             Console.WriteLine(" -  enchant data");
 
-            var data = Utils.FindElementsAsDicts(extract.root, "EquipmentEnchantData", "EnchantData", "Enchant").ToList();
+            var data = Utils.FindElementsAsDicts(extract.Root, "EquipmentEnchantData", "EnchantData", "Enchant").ToList();
 
             foreach (var item in data)
             {
@@ -41,7 +41,7 @@ namespace VeiltrochDatacenter.Extract
         {
             Console.WriteLine(" -  equipment data");
 
-            var data = Utils.FindElementsAsDicts(extract.root, "EquipmentData", "Equipment").ToList();
+            var data = Utils.FindElementsAsDicts(extract.Root, "EquipmentData", "Equipment").ToList();
 
             foreach (var item in data)
             {

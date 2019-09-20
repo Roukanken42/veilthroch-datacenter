@@ -9,11 +9,14 @@ namespace VeiltrochDatacenter.Extract
 {
     public class Extract
     {
-        public DataCenterElement root; 
+        
+        public DataCenterElement Root;
+        public StringResolver Strings;
         
         public Extract(DataCenterElement root)
         {
-            this.root = root;
+            this.Root = root;
+            this.Strings = new StringResolver(root);
         }
 
         public Dictionary<string, IEnumerable<Dictionary<string, object>>> Data()

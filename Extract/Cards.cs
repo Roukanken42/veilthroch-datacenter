@@ -13,7 +13,7 @@ namespace VeiltrochDatacenter.Extract
         {
             Console.WriteLine(" -  cards");
 
-            var templates = Utils.FindElementsAsDicts(extract.root, "CardTemplateData", "CardTemplate").ToList();
+            var templates = Utils.FindElementsAsDicts(extract.Root, "CardTemplateData", "CardTemplate").ToList();
 
             foreach (var template in templates)
             {
@@ -35,7 +35,7 @@ namespace VeiltrochDatacenter.Extract
             }
 
 
-            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Card", "String").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.Root, "StrSheet_Card", "String").ToList();
 
             foreach (var s in strings)
             {
@@ -51,7 +51,7 @@ namespace VeiltrochDatacenter.Extract
         {
             Console.WriteLine(" -  cards combines");
 
-            var combines = Utils.FindElementsAsDicts(extract.root, "CardCombineList", "CombineList").ToList();
+            var combines = Utils.FindElementsAsDicts(extract.Root, "CardCombineList", "CombineList").ToList();
 
             foreach (var combine in combines)
             {
@@ -74,7 +74,7 @@ namespace VeiltrochDatacenter.Extract
             }
 
 
-            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_CardCombineList", "String").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.Root, "StrSheet_CardCombineList", "String").ToList();
 
             var result = Utils.JoinByKey("id", combines, strings);
             return result;

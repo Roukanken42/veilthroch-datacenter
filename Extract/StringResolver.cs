@@ -9,10 +9,9 @@ namespace VeiltrochDatacenter.Extract
     {
         private Dictionary<string, Dictionary<int, string>> _strings = new Dictionary<string, Dictionary<int, string>>();
         private DataCenterElement _root = null;
+        
 
-        private StringResolver() { }
-
-        public void LoadDc(DataCenterElement root)
+        public StringResolver(DataCenterElement root)
         {
             _root = root;
             

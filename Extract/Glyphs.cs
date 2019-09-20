@@ -17,8 +17,8 @@ namespace VeiltrochDatacenter.Extract
 //            var glyphs = JoinElementsByKey("id", glyphData, glyphStrings).ToList();
             
             
-            var data = Utils.FindElementsAsDicts(extract.root, "CrestData", "CrestItem").ToList();
-            var strings = Utils.FindElementsAsDicts(extract.root, "StrSheet_Crest", "String").ToList();
+            var data = Utils.FindElementsAsDicts(extract.Root, "CrestData", "CrestItem").ToList();
+            var strings = Utils.FindElementsAsDicts(extract.Root, "StrSheet_Crest", "String").ToList();
 
             foreach (var item in data)
             {

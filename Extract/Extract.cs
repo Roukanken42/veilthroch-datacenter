@@ -22,16 +22,19 @@ namespace VeiltrochDatacenter.Extract
         public Dictionary<string, IEnumerable<Dictionary<string, object>>> Data()
         {
             Console.WriteLine("Exporting...");
+            
+            var abnormalities = Abnormalities.Extract(this).ToList();
+            
             var result = new Dictionary<string, IEnumerable<Dictionary<string, object>>>()
             {
-                {"abnormalities", Abnormalities.Extract(this)},
-                {"passivities", Passivities.Extract(this)},
-                {"passivityCategories", Passivities.ExtractCategories(this)},
-                {"glyphs", Glyphs.Extract(this)},
-                {"enchantData", Gear.ExtractEnchantData(this)},
-                {"equipmentData", Gear.ExtractEquipmentData(this)},
-                {"cards", Cards.ExtractCards(this)},
-                {"card_combines", Cards.ExtractCombines(this)},
+//                {"abnormalities", abnormalities},
+                {"passivities", new Passivities(this).Extract(abnormalities)},
+//                {"passivityCategories", Passivities.ExtractCategories(this)},
+//                {"glyphs", Glyphs.Extract(this)},
+//                {"enchantData", Gear.ExtractEnchantData(this)},
+//                {"equipmentData", Gear.ExtractEquipmentData(this)},
+//                {"cards", Cards.ExtractCards(this)},
+//                {"card_combines", Cards.ExtractCombines(this)},
             };
 
             foreach (var data in result.Values)

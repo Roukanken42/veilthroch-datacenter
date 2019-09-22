@@ -33,7 +33,7 @@ namespace VeiltrochDatacenter {
 
         public static async Task Main(string[] args) {
             var manager = new AssetManager();
-            manager.UpdateAll();
+//            manager.UpdateAll();
 
             var dc = manager._dataCenters.First();
             var dataCenter = new DataCenter(dc.File.Open(FileMode.Open), DataCenterMode.Persistent, DataCenterStringOptions.None);
@@ -42,100 +42,9 @@ namespace VeiltrochDatacenter {
 
             var fixtures = new Extract.Extract(dataCenter.Root).Json();
 
-//            
-//            var itemData = ExtractElements(dataCenter.Root, "ItemData", "Item").ToList();
-//            var itemStrings = ExtractElements(dataCenter.Root, "StrSheet_Item", "String");
-//            Console.WriteLine("Extracting ItemData@maxEnchant");
-//            var itemMaxEnchant = itemData.Select(item => 
-//                item.TryGetValue("linkMaterialEnchantId", out var matId) && matId is int id && id != 0 ? 
-//                    new Dictionary<string, object>()
-//                    {
-//                        {"id", item["id"]},
-//                        {"maxEnchant", 
-//                            dataCenter.Root
-//                            .Children("MaterialEnchantData")
-//                            .First()
-//                            .Children("ItemEnchant")
-//                            .Where(e => e["materialEnchantId"].AsInt32 == id)
-//                            .Select(e => e["maxEnchantCount"].Value)
-//                            .First()
-//                        },
-//                    } 
-//                    : new Dictionary<string, object>()
-//            );
-//
-//            var itemSkillLinkData = ResolveLinkSkillIds(dataCenter.Root, itemData, abnormals);
-//
-//            
-//            var items = JoinElementsByKey("id", itemData, itemStrings, itemMaxEnchant, itemSkillLinkData);
-//            
-//            var passivityData = ExtractElements(dataCenter.Root, "Passivity", "Passive");
-//            var passivityStrings = ExtractElements(dataCenter.Root, "StrSheet_Passivity", "String");
-//            var passivities = JoinElementsByKey("id", passivityData, passivityStrings);
-//
-//            var itemPassivityRelation = GenerateLinkRelation(items, "linkPassivityId", "item", "passivity").ToList();
-//
-//            var passivityCategories = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "PassivityCategoryData", "Category");
-//            var passivityCategoryToPassivity = GenerateLinkRelation(passivityCategories, "passivityLink", "passivity_category", "passivity");
-//            var itemToPassivityCategoryUnfiltered = GenerateLinkRelation(items, "linkPassivityCategoryId", "item", "passivity_category");
-//            
-//            Console.WriteLine("Filtering BHs mess on passivity categories");
-//            var passivityCategoryIds = passivityCategories.Select(e => e["id"]).ToHashSet();
-//            var itemToPassivityCategory = itemToPassivityCategoryUnfiltered.Where(e => passivityCategoryIds.Contains(e["passivity_category"]));
-//            
-//            var equipmentData = ExtractElements(dataCenter.Root, "EquipmentData", "Equipment");
-//
-//            var enchantData = ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant");
-//            var enchantEffects = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "Effect"));
-//            var enchantStats = GenerateIds(ExtractElements(dataCenter.Root, "EquipmentEnchantData", "EnchantData", "Enchant", "BasicStat"));
-//
-//            var crystals = ExtractElements(dataCenter.Root, "CustomizingItems", "CustomizingItem").ToList();
-//            var crystalToPassivity = GenerateLinkRelation(crystals, "passivityLink", "crystal", "passivity");
-//
-//            var glyphData = ExtractElements(dataCenter.Root, "CrestData", "CrestItem");
-//            var glyphStrings = ExtractElements(dataCenter.Root, "StrSheet_Crest", "String");
-//            var glyphs = JoinElementsByKey("id", glyphData, glyphStrings).ToList();
-//
-//            var glyphIds = glyphs.Select(g => (int) g["id"]).ToHashSet();
-//            
-//            items = items.Select(item =>
-//            {
-//                // Filter glyphs because BH be BH and have non existing non-0 links in dc...
-//                if (item.TryGetValue("linkCrestId", out var id) && !glyphIds.Contains((int) id))
-//                    item["linkCrestId"] = 0;
-//
-//                return item;
-//            }).ToList();
-//
-//
-//            Console.Write("Compressing... ");
-//            
-//            var form = new MultipartFormDataContent
-//            {
-//                {new StringContent("RUS"), "region"},
-//                {ElementsContent(items), "items"}, 
-//                {ElementsContent(passivities), "passivities"},
-//                {ElementsContent(itemPassivityRelation), "item_to_passivity"},
-//                {ElementsContent(passivityCategories), "passivity_categories"},
-//                {ElementsContent(itemToPassivityCategory), "item_to_passivity_category"},
-//                {ElementsContent(passivityCategoryToPassivity), "passivity_category_to_passivity"},
-//                {ElementsContent(equipmentData), "equipment_data"}, 
-//                {ElementsContent(enchantData), "enchant_data"},
-//                {ElementsContent(enchantEffects), "enchant_effects"},
-//                {ElementsContent(enchantStats), "enchant_stats"},
-//                {ElementsContent(abnormals), "abnormals"},
-//                {ElementsContent(abnormalKinds), "abnormality_kind"},
-//                {ElementsContent(abnormalEffects), "abnormal_effects"},
-//                {ElementsContent(crystals), "crystals"},
-//                {ElementsContent(crystalToPassivity), "crystal_to_passivity"},
-//                {ElementsContent(glyphs), "glyphs"},
-//            };
-//
-//
             Console.WriteLine("done !");
             Console.WriteLine("Uploading...");
-//
-////            await UploadData("http://127.0.0.1:8000/analyse/", form);
+
             File.WriteAllText("test.json", fixtures);
             var data = await UploadData("http://127.0.0.1:8000/datacenter/upload", new StringContent(fixtures));
 //            var fixtures = Convert.FromBase64String(data);

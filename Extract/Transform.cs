@@ -97,5 +97,18 @@ namespace VeiltrochDatacenter.Extract
                 {"id", id}
             }).ToList();
         }
+
+        public static Dictionary<string, object> Collect(Dictionary<string, object> elem, params string[] names)
+        {
+            var result = new Dictionary<string, object>();
+
+            foreach (var name in names)
+            {
+                if (elem.TryGetValue(name, out var val))
+                    result[name] = val;
+            }
+
+            return result;
+        }
     }
 }

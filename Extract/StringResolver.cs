@@ -63,7 +63,17 @@ namespace VeiltrochDatacenter.Extract
             var name = match.Captures[1].Value;
             var id = int.Parse(match.Captures[2].Value);
 
+            return Resolve(name, id);
+        }
+
+        public string Resolve(string name, int id)
+        {
             return _strings[name][id];
+        }
+
+        public string ResolveOrDefault(string name, int id, string default_s)
+        {
+            return _strings[name].GetValueOrDefault(id, default_s);
         }
     }
 }

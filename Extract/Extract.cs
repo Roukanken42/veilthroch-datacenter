@@ -33,8 +33,8 @@ namespace VeiltrochDatacenter.Extract
 //                {"glyphs", Glyphs.Extract(this)},
 //                {"enchantData", Gear.ExtractEnchantData(this)},
 //                {"equipmentData", Gear.ExtractEquipmentData(this)},
-//                {"cards", Cards.ExtractCards(this)},
-//                {"card_combines", Cards.ExtractCombines(this)},
+                {"cards", Cards.ExtractCards(this)},
+                {"card_combines", Cards.ExtractCombines(this)},
             };
 
             foreach (var data in result.Values)

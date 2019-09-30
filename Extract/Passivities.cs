@@ -18,7 +18,7 @@ namespace VeiltrochDatacenter.Extract
         private Dictionary<(string, string), string> targetStrings;
         private Dictionary<string, string> valueColor;
         private Dictionary<int, (string, string)> mainStringValues;
-        private Dictionary<int, string> abnormalNames;
+        private Dictionary<int, Dictionary<string, object>> abnormalities;
 
 
         public Passivities(Extract extract)
@@ -29,9 +29,9 @@ namespace VeiltrochDatacenter.Extract
 
         public IEnumerable<Dictionary<string, object>> Extract(List<Dictionary<string, object>> abnormalities)
         {
-            this.abnormalNames = abnormalities.ToDictionary(
+            this.abnormalities = abnormalities.ToDictionary(
                 e => (int) e["id"],
-                e => (string) e.GetValueOrDefault("name", "")
+                e => e
             );
             
             Console.WriteLine(" -  passivities");
@@ -103,8 +103,6 @@ namespace VeiltrochDatacenter.Extract
                 var id = int.Parse(targetSpeciesId);
                 targetSpecies = extract.Strings.ResolveOrDefault("species", id, null);
             }
-
-            
             
             var mainStringId = mainStringIds.GetValueOrDefault((type, condition), null)
                       ?? mainStringIds.GetValueOrDefault((type, -1), null);
@@ -128,17 +126,27 @@ namespace VeiltrochDatacenter.Extract
             data["target"] = targetStrings.GetValueOrDefault((mobSize, state), "");
 
             data["value"] = "TODO";
+
+            string abnormalTooltip = null;
             
             if (abnormalTypes.Contains(type))
             {
                 var id = int.Parse((string) passive["value"]);
-                data["abnormal"] = abnormalNames.GetValueOrDefault(id, "");
+                var abnormal = this.abnormalities[id];
+                
+                data["abnormal"] = (string) abnormal.GetValueOrDefault("name", "");
+                abnormalTooltip = (string) abnormal.GetValueOrDefault("tooltip", "");
             }
-            
+
             var res = ResolveTemplate(mainString, data);
-            if (targetSpecies != null)
-                res = "[" + targetSpecies + "] " + res; 
             
+            if (targetSpecies != null)
+                res = "<span class='target-species'>[" + targetSpecies + "]</span> " + res;
+
+            if (abnormalTypes.Contains(type))
+            {
+                res += "" + abnormalTooltip + "";
+            }
             return res;
         }
 
@@ -162,6 +170,8 @@ namespace VeiltrochDatacenter.Extract
         
         private void LoadTooltipConstructionData()
         {
+            // TODO: this looks atrocious, refactor (how ?)
+            
             extract.Strings.LoadStrings("species", "StrSheet_Species", "String");
             extract.Strings.LoadStringRegions("passive", "StrSheet_PassiveMainString", "StringGroup");
             extract.Strings.LoadStringRegions("passive", "StrSheet_PassiveStatsDefine", "StringGroup");

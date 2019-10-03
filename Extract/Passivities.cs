@@ -225,9 +225,10 @@ namespace VeiltrochDatacenter.Extract
             this.targetStrings = config.Children("TargetStringDefine")
                 .First()
                 .Children("String")
+                .GroupBy(elem => (elem["mobSize"].AsString, elem["state"].AsString))
                 .ToDictionary(
-                    elem => (elem["mobSize"].AsString, elem["state"].AsString),
-                    elem => extract.Strings.Resolve("passive.target", elem["id"].AsInt32)
+                    group => group.Key,
+                    group => extract.Strings.Resolve("passive.target", group.First()["id"].AsInt32)
                 );
             
             this.valueColor = config.Children("ValueColorDefine")

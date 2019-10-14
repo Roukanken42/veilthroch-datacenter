@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Alkahest.Core.Data;
 using Ionic.Zip;
@@ -16,7 +17,7 @@ namespace VeiltrochDatacenter.Extract
         private Dictionary<(int, string), string> conditionStrings;
         private Dictionary<(int, int), int?> mainStringIds;
         private Dictionary<(string, string), string> targetStrings;
-        private Dictionary<string, string> valueColor;
+        private Dictionary<string, string> valueColors;
         private Dictionary<int, (string, string)> mainStringValues;
         private Dictionary<int, Dictionary<string, object>> abnormalities;
 
@@ -88,6 +89,24 @@ namespace VeiltrochDatacenter.Extract
             return categories;
         }
 
+        private static string ResolveTemplate(string template, Dictionary<string, string> data)
+        {
+            var result = template;
+
+            foreach (var pair in data)
+            {
+                var key = "{" + pair.Key + "}";
+                if (!result.Contains(key) || pair.Value == null) continue;
+                
+                result = result.Replace(
+                    key,
+                    ResolveTemplate(pair.Value, data)
+                );
+            }
+
+            return result;
+        }
+
         private string GenerateTooltip(IReadOnlyDictionary<string, object> passive)
         {
             var type = (int) passive["type"];
@@ -105,7 +124,7 @@ namespace VeiltrochDatacenter.Extract
             }
             
             var mainStringId = mainStringIds.GetValueOrDefault((type, condition), null)
-                      ?? mainStringIds.GetValueOrDefault((type, -1), null);
+                               ?? mainStringIds.GetValueOrDefault((type, -1), null);
 
             if (mainStringId == null)
                 // Didn't find 'main string' template, quiting creation
@@ -125,8 +144,9 @@ namespace VeiltrochDatacenter.Extract
                 .Replace("{value}", "{conditionValue}");
             data["target"] = targetStrings.GetValueOrDefault((mobSize, state), "");
 
-            data["value"] = "TODO";
-
+            var valueStr = passive.GetValueOrDefault("value", "") as string;
+            valueStr = valueStr?.Trim();
+            
             string abnormalTooltip = null;
             
             if (abnormalTypes.Contains(type))
@@ -134,10 +154,39 @@ namespace VeiltrochDatacenter.Extract
                 var id = int.Parse((string) passive["value"]);
                 var abnormal = this.abnormalities[id];
                 
-                data["abnormal"] = (string) abnormal.GetValueOrDefault("name", "");
-                abnormalTooltip = (string) abnormal.GetValueOrDefault("tooltip", "");
+                data["abnormal"] = "\n<span class='is-highlighted'> [" + 
+                                   (string) abnormal.GetValueOrDefault("name", "") +
+                                   "]</span>";
+                
+                abnormalTooltip = "\n<span class='additional-details'> <br/><br/>" + 
+                                  (string) abnormal.GetValueOrDefault("tooltip", "") +
+                                  "</span>";
+            } else if (!string.IsNullOrEmpty(valueStr))
+            {
+                var value = float.Parse(valueStr, CultureInfo.InvariantCulture);
+                
+                if (/*addableTypes.Contains(type) || */passive.GetValueOrDefault("method", "3").ToString() == "2")
+                {
+                    var sign = value > 0 ? "+" : "-";
+                    data["value"] = sign + Math.Abs(niceRound(value)).ToString("g", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    value = (value - 1) * 100;
+                    var sign = value > 0 ? "+" : "-";
+
+                    data["value"] = sign + Math.Abs(niceRound(value)).ToString("g", CultureInfo.InvariantCulture) + "%";
+                }
             }
 
+
+
+            if (data.ContainsKey("value"))
+            {
+                var color = valueColors.GetValueOrDefault(type.ToString(), "positive");
+                mainString += " <span class='color-" + color + "'>{value}</span>";
+            }
+            
             var res = ResolveTemplate(mainString, data);
             
             if (targetSpecies != null)
@@ -147,25 +196,19 @@ namespace VeiltrochDatacenter.Extract
             {
                 res += "" + abnormalTooltip + "";
             }
+            
+            
             return res;
         }
 
-        private static string ResolveTemplate(string template, Dictionary<string, string> data)
+        private static double niceRound(double number)
         {
-            var result = template;
+            var precision = 0;
 
-            foreach (var pair in data)
-            {
-                var key = "{" + pair.Key + "}";
-                if (!result.Contains(key) || pair.Value == null) continue;
-                
-                result = result.Replace(
-                    key,
-                    ResolveTemplate(pair.Value, data)
-                );
-            }
+            while (Math.Abs(Math.Round(number, precision) - number) > 0.00001)
+                precision++;
 
-            return result;
+            return Math.Round(number, precision);
         }
         
         private void LoadTooltipConstructionData()
@@ -231,7 +274,7 @@ namespace VeiltrochDatacenter.Extract
                     group => extract.Strings.Resolve("passive.target", group.First()["id"].AsInt32)
                 );
             
-            this.valueColor = config.Children("ValueColorDefine")
+            this.valueColors = config.Children("ValueColorDefine")
                 .First()
                 .Children("String")
                 .ToDictionary(

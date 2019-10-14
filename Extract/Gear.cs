@@ -42,7 +42,7 @@ namespace VeiltrochDatacenter.Extract
             Console.WriteLine(" -  equipment data");
 
             var data = Utils.FindElementsAsDicts(extract.Root, "EquipmentData", "Equipment").ToList();
-
+            
             foreach (var item in data)
             {
                 Transform.Rename(item,"equipmentId", "id");

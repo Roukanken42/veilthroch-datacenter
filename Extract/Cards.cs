@@ -85,7 +85,7 @@ namespace VeiltrochDatacenter.Extract
             url = url.Replace("img://__", "");
             url = url.Replace(".", "/");
             
-            return "datacenter/" + url.ToLower() + ".png";
+            return url.ToLower() + ".png";
         }
     }
 }

@@ -46,7 +46,8 @@ namespace VeiltrochDatacenter {
             Console.WriteLine("Uploading...");
 
             File.WriteAllText("test.json", fixtures);
-            var data = await UploadData("http://127.0.0.1:8000/datacenter/upload", new StringContent(fixtures));
+//            var data = await UploadData("http://staging.veilthroch.com/api/datacenter/upload", new StringContent(fixtures));
+            var data = await UploadData("http://localhost:8000/datacenter/upload", new StringContent(fixtures));
 //            var fixtures = Convert.FromBase64String(data);
 //            System.IO.File.WriteAllBytes(@"RUS.json.gz", fixtures);
         }

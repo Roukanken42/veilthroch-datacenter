@@ -24,7 +24,7 @@ namespace Alkahest
             AssetDirectory = "assets";
             AssetTimeout = TimeSpan.FromMinutes(10);
 //            Regions = Split("uk de fr jp kr na ru se th tw", ' ').Select(x => (Region)Enum.Parse(typeof(Region), x, true)).ToArray();
-            Regions = Split("kr", ' ').Select(x => (Region)Enum.Parse(typeof(Region), x, true)).ToArray();
+            Regions = Split("uk", ' ').Select(x => (Region)Enum.Parse(typeof(Region), x, true)).ToArray();
         }
 
         static string[] Split(string value, char separator)

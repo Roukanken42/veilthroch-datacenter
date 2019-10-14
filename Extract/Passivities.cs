@@ -158,34 +158,40 @@ namespace VeiltrochDatacenter.Extract
                                    (string) abnormal.GetValueOrDefault("name", "") +
                                    "]</span>";
                 
-                abnormalTooltip = "\n<span class='additional-details'> <br/><br/>" + 
+                abnormalTooltip = "\n<span class='additional-details'> <br/>" + 
                                   (string) abnormal.GetValueOrDefault("tooltip", "") +
                                   "</span>";
             } else if (!string.IsNullOrEmpty(valueStr))
             {
                 var value = float.Parse(valueStr, CultureInfo.InvariantCulture);
+                var sign = "";
                 
                 if (/*addableTypes.Contains(type) || */passive.GetValueOrDefault("method", "3").ToString() == "2")
                 {
-                    var sign = value > 0 ? "+" : "-";
+                    sign = value > 0 ? "+" : "-";
                     data["value"] = sign + Math.Abs(niceRound(value)).ToString("g", CultureInfo.InvariantCulture);
                 }
                 else
                 {
                     value = (value - 1) * 100;
-                    var sign = value > 0 ? "+" : "-";
-
+                    sign = value > 0 ? "+" : "-";
+                    
                     data["value"] = sign + Math.Abs(niceRound(value)).ToString("g", CultureInfo.InvariantCulture) + "%";
                 }
-            }
-
-
-
-            if (data.ContainsKey("value"))
-            {
+                
                 var color = valueColors.GetValueOrDefault(type.ToString(), "positive");
-                mainString += " <span class='color-" + color + "'>{value}</span>";
+                color = color switch
+                {
+                    "positive" => (sign == "+" ? "positive" : "negative"),
+                    "opposite" => (sign == "+" ? "negative" : "positive"),
+                    "neutral" => "neutral",
+                    _ => "none"
+                };
+
+                var valueColor = 
+                    mainString += " <span class='color-" + color + "'>{value}</span>";
             }
+
             
             var res = ResolveTemplate(mainString, data);
             
@@ -276,7 +282,7 @@ namespace VeiltrochDatacenter.Extract
             
             this.valueColors = config.Children("ValueColorDefine")
                 .First()
-                .Children("String")
+                .Children("ValueColor")
                 .ToDictionary(
                     elem => elem["typeId"].ToString(),
                     elem => elem["valueType"].AsString
